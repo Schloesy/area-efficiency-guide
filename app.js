@@ -63,16 +63,36 @@ if(typeof document!=='undefined'){
   el('language').checked=language==='en';document.documentElement.lang=language;
   for(const [id,key] of Object.entries({heading:'title',intro:'intro',calc:'calc',export:'csv',resultHeading:'results',footerText:'footer'}))el(id).textContent=t()[key];
   el('results').dataset.empty=t().empty;
-  el('status').textContent=rows.length?t().processed(rows.length):t().ready;
+  if(!busy)el('status').textContent=rows.length?t().processed(rows.length):t().ready;
   el('updateTitle').textContent=t().update;el('updateButton').textContent=t().updateAction;el('updateNote').textContent=t().updateNote;
   const results=el('results');results.replaceChildren();
   for(const row of rows){const div=document.createElement('div');div.className='route';const title=document.createElement('h3');title.textContent=row.Datei;div.append(title);
-   if(row.Strecke_km!==undefined){div.append(renderRoute(row));const stats=document.createElement('div');stats.className='stats';for(const [label,value] of [[t().distance,fmt(row.Strecke_km,2)+' km'],[t().area,fmt(row.Flaeche_km2,4)+' km²'],[t().circle,fmt(row.Kreis_Effizienz_Prozent,2)+' %'],[t().square,fmt(row.Quadrat_Effizienz_Prozent,2)+' %']]){const box=document.createElement('div');box.className='stat',small=document.createElement('span'),strong=document.createElement('strong');small.textContent=label;strong.textContent=value;box.append(small,strong);stats.append(box)}div.append(stats)}
+   if(row.Strecke_km!==undefined){try{div.append(renderRoute(row))}catch(e){const warning=document.createElement('p');warning.className='small error';warning.textContent='Route display: '+e.message;div.append(warning)}const stats=document.createElement('div');stats.className='stats';for(const [label,value] of [[t().distance,fmt(row.Strecke_km,2)+' km'],[t().area,fmt(row.Flaeche_km2,4)+' km²'],[t().circle,fmt(row.Kreis_Effizienz_Prozent,2)+' %'],[t().square,fmt(row.Quadrat_Effizienz_Prozent,2)+' %']]){const box=document.createElement('div');box.className='stat',small=document.createElement('span'),strong=document.createElement('strong');small.textContent=label;strong.textContent=value;box.append(small,strong);stats.append(box)}div.append(stats)}
    const info=document.createElement('p');info.className=row.Strecke_km===undefined?'small error':'small';info.textContent=row.Strecke_km===undefined?t().error+': '+translateError(row._error,language):(row.Teilflaechen?'OK':t().noFaces)+' · '+t().faces+': '+row.Teilflaechen;div.append(info);results.append(div);
   }
  };
  el('language').addEventListener('change',e=>{language=e.target.checked?'en':'de';localStorage.setItem('intvl-language',language);render()});
- el('calc').onclick=async()=>{const files=Array.from(el('files').files);if(!files.length){el('status').textContent=t().select;return}rows=[];busy=true;el('calc').disabled=true;el('export').disabled=true;render();for(const file of files){try{rows.push(evaluate(file.name,await file.text()))}catch(e){rows.push({Datei:file.name,_error:e.message})}render();await new Promise(resolve=>setTimeout(resolve,0))}busy=false;el('calc').disabled=false;el('export').disabled=false;render()};
+ el('calc').onclick=async()=>{
+  const files=Array.from(el('files').files);
+  if(!files.length){el('status').textContent=t().select;return}
+  rows=[];busy=true;el('calc').disabled=true;el('export').disabled=true;
+  el('results').replaceChildren();
+  el('status').textContent=language==='de'?'Berechnung läuft …':'Calculating …';
+  try{
+   for(const file of files){
+    try{rows.push(evaluate(file.name,await file.text()))}
+    catch(e){rows.push({Datei:file.name,_error:e.message||String(e)})}
+    await new Promise(resolve=>setTimeout(resolve,0));
+   }
+  }catch(e){el('status').textContent=(language==='de'?'Unerwarteter Fehler: ':'Unexpected error: ')+(e.message||String(e))}
+  finally{
+   busy=false;el('calc').disabled=false;el('export').disabled=rows.length===0;
+   try{render()}catch(e){
+    console.error('Rendering failed',e);
+    el('status').textContent=(language==='de'?'Anzeigefehler: ':'Display error: ')+(e.message||String(e));
+   }
+  }
+ };
  el('export').onclick=()=>{const text='\ufeff'+FIELDS.join(';')+'\r\n'+rows.map(row=>FIELDS.map(k=>{let v=row[k]??(k==='Status'&&row._error?translateError(row._error,language):'');if(typeof v==='number')v=String(v).replace('.',',');if(k==='Status'&&row.Strecke_km===undefined)v=t().error+': '+translateError(row._error,language);v=String(v);return '"'+v.replaceAll('"','""')+'"'}).join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='intvl_ergebnisse.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
  let waitingWorker=null;
  const showUpdate=worker=>{waitingWorker=worker;el('updateBox').hidden=false};
