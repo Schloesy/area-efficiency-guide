@@ -150,7 +150,7 @@ if(typeof document!=='undefined'){
  const render=()=>{
   el('language').checked=language==='en';document.documentElement.lang=language;
   el('themeLabel').textContent=t().themeLabel;themeSelect.setAttribute('aria-label',t().themeLabel);
-  for(const [value,key] of [['system','themeSystem'],['light','themeLight'],['dark','themeDark']])themeSelect.querySelector('[value=+value+]').textContent=t()[key];
+  for(const [value,key] of [['system','themeSystem'],['light','themeLight'],['dark','themeDark']])Array.from(themeSelect.options).find(option=>option.value===value).textContent=t()[key];
   for(const [id,key] of Object.entries({heading:'title',intro:'intro',calc:'calc',export:'csv',resultHeading:'results',footerText:'footer'}))el(id).textContent=t()[key];
   for(const [id,key] of Object.entries({tabGpx:'tabGpx',tabManual:'tabManual',manualHeading:'manualHeading',manualIntro:'manualIntro',manualLengthLabel:'manualLength',manualAreaLabel:'manualArea'}))el(id).textContent=t()[key];
   el('osmToggle').textContent=osmEnabled?t().osmOff:t().osmOn;el('osmToggle').setAttribute('aria-pressed',String(osmEnabled));el('osmInfo').textContent=t().osmInfo;
