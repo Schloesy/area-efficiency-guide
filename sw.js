@@ -1,5 +1,5 @@
-const CACHE='area-guide-offline-v080';
-const FILES=['./','./index.html','./app.js?v=080','./manifest.webmanifest','./icon.svg'];
+const CACHE='area-guide-offline-v081';
+const FILES=['./','./index.html','./app.js?v=081','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES))));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const key of await caches.keys())if(key.startsWith('area-guide-offline-')&&key!==CACHE)await caches.delete(key);await self.clients.claim()})()));
 self.addEventListener('message',event=>{if(event.data&&event.data.type==='SKIP_WAITING')self.skipWaiting()});
