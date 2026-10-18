@@ -86,19 +86,21 @@ function renderRoute(row){
 
 
 const LANG={
- de:{title:'GPX-Routen auswerten',intro:'Wähle eine oder mehrere GPX-Dateien. Die Daten bleiben auf deinem Gerät.',calc:'Routen berechnen',csv:'CSV speichern',results:'Ergebnisse',empty:'Noch keine Auswertung.',ready:'Bereit.',select:'Bitte GPX-Dateien auswählen.',processed:n=>`${n} Datei(en) verarbeitet. Alles bleibt lokal.`,distance:'Strecke',area:'Fläche',circle:'Kreis-Effizienz',square:'Quadrat-Effizienz',faces:'Teilflächen',faceBreakdown:'Einzelne Teilflächen',face:'Teilfläche',faceSum:'Summe der Teilflächen',faceNote:'Die Flächen stammen aus derselben Berechnung wie der Gesamtwert. Gerundete Einzelwerte können minimal abweichen.',start:'Start/Ziel',route:'Strecke',filled:'gezählte Fläche',update:'Neue Version verfügbar',updateAction:'Jetzt aktualisieren',updateNote:'Deine ausgewählten GPX-Dateien müssen danach gegebenenfalls erneut geöffnet werden.',upToDate:'Aktuelle Version',footer:'Lokale Berechnung · Die eingefärbten Teilflächen entsprechen der berechneten Fläche. Bei komplizierten GPS-Spuren die Ergebnisse mit Windows vergleichen.',errors:{INVALID_XML:'Ungültige GPX/XML-Datei',NO_POINTS:'Keine Track- oder Routenpunkte gefunden',INVALID_COORDS:'Ungültige GPS-Koordinaten',DISCONNECTED:'Getrennte Track-Segmente: Fläche nicht zuverlässig',TOO_MANY_POINTS:'Zu viele GPX-Punkte für diese Version',OPEN_ROUTE:'Offene Route (Start–Ziel: {n} m)'},error:'FEHLER',noFaces:'Keine geschlossene Teilfläche erkannt'},
- en:{title:'Analyze GPX routes',intro:'Select one or more GPX files. Your data stays on your device.',calc:'Analyze routes',csv:'Save CSV',results:'Results',empty:'No results yet.',ready:'Ready.',select:'Please select GPX files.',processed:n=>`${n} file(s) processed. Everything stays on your device.`,distance:'Distance',area:'Area',circle:'Circle efficiency',square:'Square efficiency',faces:'Enclosed regions',faceBreakdown:'Individual enclosed areas',face:'Area',faceSum:'Sum of enclosed areas',faceNote:'These values come from the same calculation as the total. Rounded figures may differ slightly.',start:'Start/finish',route:'Route',filled:'counted area',update:'New version available',updateAction:'Update now',updateNote:'You may need to select your GPX files again after updating.',upToDate:'Current version',footer:'Local calculations · Highlighted regions are the areas counted by the algorithm. Compare complicated GPS tracks with the Windows version.',errors:{INVALID_XML:'Invalid GPX/XML file',NO_POINTS:'No track or route points found',INVALID_COORDS:'Invalid GPS coordinates',DISCONNECTED:'Disconnected track segments: area is unreliable',TOO_MANY_POINTS:'Too many GPX points for this version',OPEN_ROUTE:'Open route (start–finish: {n} m)'},error:'ERROR',noFaces:'No enclosed region detected'}
+ de:{title:'GPX-Routen auswerten',intro:'Wähle eine oder mehrere GPX-Dateien. Die Daten bleiben auf deinem Gerät.',calc:'Routen berechnen',csv:'CSV speichern',results:'Ergebnisse',empty:'Noch keine Auswertung.',ready:'Bereit.',select:'Bitte GPX-Dateien auswählen.',processed:n=>`${n} Datei(en) verarbeitet. Alles bleibt lokal.`,distance:'Strecke',area:'Fläche',circle:'Kreis-Effizienz',square:'Quadrat-Effizienz',faces:'Teilflächen',faceBreakdown:'Einzelne Teilflächen',face:'Teilfläche',faceSum:'Summe der Teilflächen',faceNote:'Die Flächen stammen aus derselben Berechnung wie der Gesamtwert. Gerundete Einzelwerte können minimal abweichen.',start:'Start/Ziel',route:'Strecke',filled:'gezählte Fläche',update:'Neue Version verfügbar',updateAction:'Jetzt aktualisieren',updateNote:'Deine ausgewählten GPX-Dateien müssen danach gegebenenfalls erneut geöffnet werden.',upToDate:'Aktuelle Version',tabGpx:'GPX-Analyse',tabManual:'Manuell',manualHeading:'Manuelle Effizienzberechnung',manualIntro:'Streckenlänge und eingeschlossene Fläche eingeben. Die Berechnung erfolgt automatisch.',manualLength:'Streckenlänge (km)',manualArea:'Eingeschlossene Fläche (km²)',manualPrompt:'Bitte Länge und Fläche eingeben.',manualInvalid:'Bitte gültige Zahlen eingeben (Komma oder Punkt).',manualLengthInvalid:'Die Streckenlänge muss größer als 0 sein.',manualAreaInvalid:'Die Fläche darf nicht negativ sein.',manualCircleIdeal:'Ideale Kreisfläche',manualSquareIdeal:'Ideale Quadratfläche',manualWarning:'Die Fläche ist größer als die maximale Kreisfläche für diese Streckenlänge. Bitte die Eingaben und Messgrundlagen überprüfen.',footer:'Lokale Berechnung · Die eingefärbten Teilflächen entsprechen der berechneten Fläche. Bei komplizierten GPS-Spuren die Ergebnisse mit Windows vergleichen.',errors:{INVALID_XML:'Ungültige GPX/XML-Datei',NO_POINTS:'Keine Track- oder Routenpunkte gefunden',INVALID_COORDS:'Ungültige GPS-Koordinaten',DISCONNECTED:'Getrennte Track-Segmente: Fläche nicht zuverlässig',TOO_MANY_POINTS:'Zu viele GPX-Punkte für diese Version',OPEN_ROUTE:'Offene Route (Start–Ziel: {n} m)'},error:'FEHLER',noFaces:'Keine geschlossene Teilfläche erkannt'},
+ en:{title:'Analyze GPX routes',intro:'Select one or more GPX files. Your data stays on your device.',calc:'Analyze routes',csv:'Save CSV',results:'Results',empty:'No results yet.',ready:'Ready.',select:'Please select GPX files.',processed:n=>`${n} file(s) processed. Everything stays on your device.`,distance:'Distance',area:'Area',circle:'Circle efficiency',square:'Square efficiency',faces:'Enclosed regions',faceBreakdown:'Individual enclosed areas',face:'Area',faceSum:'Sum of enclosed areas',faceNote:'These values come from the same calculation as the total. Rounded figures may differ slightly.',start:'Start/finish',route:'Route',filled:'counted area',update:'New version available',updateAction:'Update now',updateNote:'You may need to select your GPX files again after updating.',upToDate:'Current version',tabGpx:'GPX analysis',tabManual:'Manual',manualHeading:'Manual efficiency calculator',manualIntro:'Enter the route distance and enclosed area. Results update automatically.',manualLength:'Route distance (km)',manualArea:'Enclosed area (km²)',manualPrompt:'Enter distance and area.',manualInvalid:'Please enter valid numbers (comma or decimal point).',manualLengthInvalid:'Distance must be greater than 0.',manualAreaInvalid:'Area cannot be negative.',manualCircleIdeal:'Ideal circle area',manualSquareIdeal:'Ideal square area',manualWarning:'The area exceeds the maximum circular area for this distance. Please check the inputs and measurement methods.',footer:'Local calculations · Highlighted regions are the areas counted by the algorithm. Compare complicated GPS tracks with the Windows version.',errors:{INVALID_XML:'Invalid GPX/XML file',NO_POINTS:'No track or route points found',INVALID_COORDS:'Invalid GPS coordinates',DISCONNECTED:'Disconnected track segments: area is unreliable',TOO_MANY_POINTS:'Too many GPX points for this version',OPEN_ROUTE:'Open route (start–finish: {n} m)'},error:'ERROR',noFaces:'No enclosed region detected'}
 };
 function translateError(message,lang){const t=LANG[lang],parts=String(message).split(':');return (t.errors[parts[0]]||message).replace('{n}',parts[1]||'');}
 if(typeof module!=='undefined')module.exports={evaluate,facesArea,translateError};
 if(typeof document!=='undefined'){
  const el=id=>document.getElementById(id);
- let language=localStorage.getItem('intvl-language')==='en'?'en':'de',rows=[],busy=false;
+ let language=localStorage.getItem('intvl-language')==='en'?'en':'de',rows=[],busy=false,activeView='gpx';
  const t=()=>LANG[language],fmt=(x,n)=>Number(x).toLocaleString(language==='de'?'de-DE':'en-GB',{minimumFractionDigits:n,maximumFractionDigits:n});
  const render=()=>{
   el('language').checked=language==='en';document.documentElement.lang=language;
   for(const [id,key] of Object.entries({heading:'title',intro:'intro',calc:'calc',export:'csv',resultHeading:'results',footerText:'footer'}))el(id).textContent=t()[key];
+  for(const [id,key] of Object.entries({tabGpx:'tabGpx',tabManual:'tabManual',manualHeading:'manualHeading',manualIntro:'manualIntro',manualLengthLabel:'manualLength',manualAreaLabel:'manualArea'}))el(id).textContent=t()[key];
   el('results').dataset.empty=t().empty;
+  renderManual();
   if(!busy)el('status').textContent=rows.length?t().processed(rows.length):t().ready;
   el('updateTitle').textContent=t().update;el('updateButton').textContent=t().updateAction;el('updateNote').textContent=t().updateNote;
   const results=el('results');results.replaceChildren();
@@ -107,6 +109,56 @@ if(typeof document!=='undefined'){
    const info=document.createElement('p');info.className=row.Strecke_km===undefined?'small error':'small';info.textContent=row.Strecke_km===undefined?t().error+': '+translateError(row._error,language):(row.Teilflaechen?'OK':t().noFaces)+' · '+t().faces+': '+row.Teilflaechen;div.append(info);results.append(div);
   }
  };
+ const numberInput=value=>{
+  const s=String(value).trim().replace(/\s/g,'');
+  if(!/^(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(s))return NaN;
+  return Number(s.replace(',','.'));
+ };
+ function renderManual(){
+  const lengthRaw=el('manualLength').value,areaRaw=el('manualArea').value;
+  const result=el('manualResults'),msg=el('manualMessage'),warn=el('manualWarning');
+  result.replaceChildren();warn.hidden=true;
+  el('manualLength').removeAttribute('aria-invalid');el('manualArea').removeAttribute('aria-invalid');
+  if(!lengthRaw.trim()||!areaRaw.trim()){msg.textContent=t().manualPrompt;return}
+  const length=numberInput(lengthRaw),area=numberInput(areaRaw);
+  if(!Number.isFinite(length)||!Number.isFinite(area)){msg.textContent=t().manualInvalid;return}
+  if(length<=0){msg.textContent=t().manualLengthInvalid;el('manualLength').setAttribute('aria-invalid','true');return}
+  if(area<0){msg.textContent=t().manualAreaInvalid;el('manualArea').setAttribute('aria-invalid','true');return}
+  msg.textContent='';
+  const circle=length*length/(4*Math.PI),square=length*length/16;
+  for(const [label,value] of [[t().manualCircleIdeal,fmt(circle,4)+' km²'],[t().manualSquareIdeal,fmt(square,4)+' km²'],[t().circle,fmt(area/circle*100,2)+' %'],[t().square,fmt(area/square*100,2)+' %']]){
+   const box=document.createElement('div'),small=document.createElement('span'),strong=document.createElement('strong');
+   box.className='stat';small.textContent=label;strong.textContent=value;box.append(small,strong);result.append(box);
+  }
+  if(area>circle*(1+1e-10)){warn.textContent=t().manualWarning;warn.hidden=false}
+ }
+ function showView(view){
+  activeView=view;
+  el('viewGpx').hidden=view!=='gpx';el('viewManual').hidden=view!=='manual';
+  for(const [id,value] of [['tabGpx','gpx'],['tabManual','manual']]){
+   const selected=view===value;el(id).classList.toggle('active',selected);el(id).setAttribute('aria-selected',String(selected));
+  }
+ }
+ el('tabGpx').addEventListener('click',()=>showView('gpx'));
+ el('tabManual').addEventListener('click',()=>showView('manual'));
+ for(const id of ['manualLength','manualArea'])el(id).addEventListener('input',renderManual);
+ // Swipe between views only when starting on noninteractive page content.
+ let touchStart=null;
+ const swipeExcluded=target=>target.closest('input,button,select,textarea,a,.route-map,.face-details,.view-tabs');
+ for(const id of ['viewGpx','viewManual']){
+  const panel=el(id);
+  panel.addEventListener('touchstart',e=>{
+   if(e.touches.length!==1||swipeExcluded(e.target)){touchStart=null;return}
+   touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};
+  },{passive:true});
+  panel.addEventListener('touchend',e=>{
+   if(!touchStart||!e.changedTouches.length)return;
+   const dx=e.changedTouches[0].clientX-touchStart.x,dy=e.changedTouches[0].clientY-touchStart.y;
+   touchStart=null;
+   if(Math.abs(dx)>85&&Math.abs(dx)>Math.abs(dy)*1.6)showView(dx>0?'manual':'gpx');
+  },{passive:true});
+  panel.addEventListener('touchcancel',()=>{touchStart=null},{passive:true});
+ }
  el('language').addEventListener('change',e=>{language=e.target.checked?'en':'de';localStorage.setItem('intvl-language',language);render()});
  el('calc').onclick=async()=>{
   const files=Array.from(el('files').files);
