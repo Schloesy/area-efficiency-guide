@@ -114,14 +114,14 @@ function createOsmMap(row,language){
  overlay.append(node('path',{d:d(row._xy),fill:'none',stroke:'#fff','stroke-width':5.5,'stroke-linejoin':'round','stroke-linecap':'round'}));overlay.append(node('path',{d:d(row._xy),fill:'none',stroke:'#176c51','stroke-width':3.3,'stroke-linejoin':'round','stroke-linecap':'round'}));const [sx,sy]=pt(row._xy[0]);overlay.append(node('circle',{cx:sx,cy:sy,r:6,fill:'#fff',stroke:'#176c51','stroke-width':3}));
  }
  function zoomAt(next,x,y){const old=scale(),[w,h]=size();const anchor=[cx+(x-w/2)/old,cy+(y-h/2)/old];zoom=Math.max(MIN,Math.min(MAX,next));const s=scale();cx=anchor[0]-(x-w/2)/s;cy=anchor[1]-(y-h/2)/s;clamp();draw()}
- addButton('+',()=>zoomAt(zoom+1,size()[0]/2,size()[1]/2));addButton('−',()=>zoomAt(zoom-1,size()[0]/2,size()[1]/2));addButton(lang.fitRoute,fit);
+ const fitButton=addButton('⛶',fit);fitButton.title=lang.fitRoute;fitButton.setAttribute('aria-label',lang.fitRoute);
  viewport.addEventListener('wheel',e=>{e.preventDefault();const r=viewport.getBoundingClientRect();zoomAt(zoom+(e.deltaY<0?1:-1),e.clientX-r.left,e.clientY-r.top)},{passive:false});
  const pointers=new Map();let lastPinch=null;
  viewport.addEventListener('pointerdown',e=>{if(e.button!==0&&e.pointerType==='mouse')return;viewport.setPointerCapture(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);lastPinch=null});
  viewport.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;const previous=pointers.get(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);if(pointers.size===1){cx-=(e.clientX-previous[0])/scale();cy-=(e.clientY-previous[1])/scale();clamp();draw()}else if(pointers.size===2){const a=[...pointers.values()],dist=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);if(lastPinch!==null&&dist>lastPinch*1.5){zoomAt(zoom+1,size()[0]/2,size()[1]/2);lastPinch=dist}else if(lastPinch!==null&&dist<lastPinch/1.5){zoomAt(zoom-1,size()[0]/2,size()[1]/2);lastPinch=dist}else if(lastPinch===null)lastPinch=dist}});
  for(const type of ['pointerup','pointercancel','lostpointercapture'])viewport.addEventListener(type,e=>{pointers.delete(e.pointerId);lastPinch=null});
- const observer=new ResizeObserver(()=>{if(!dead)draw()});observer.observe(viewport);
- fit();return {element:host,destroy(){dead=true;observer.disconnect();tiles.replaceChildren();overlay.replaceChildren()}};
+ let fitted=false;const observer=new ResizeObserver(()=>{if(dead)return;if(viewport.clientWidth>1&&viewport.clientHeight>1){if(!fitted){fitted=true;fit()}else draw()}});observer.observe(viewport);
+ return {element:host,destroy(){dead=true;observer.disconnect();tiles.replaceChildren();overlay.replaceChildren()}};
 }
 
 const LANG={
@@ -187,7 +187,7 @@ if(typeof document!=='undefined'){
  for(const id of ['manualLength','manualArea'])el(id).addEventListener('input',renderManual);
  // Swipe between views only when starting on noninteractive page content.
  let touchStart=null;
- const swipeExcluded=target=>target.closest('input,button,select,textarea,a,.route-map,.face-details,.view-tabs');
+ const swipeExcluded=target=>target.closest('input,button,select,textarea,a,.route-map,.osm-map,.face-details,.view-tabs');
  for(const id of ['viewGpx','viewManual']){
   const panel=el(id);
   panel.addEventListener('touchstart',e=>{
