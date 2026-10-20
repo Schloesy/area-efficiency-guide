@@ -149,14 +149,14 @@ function createOsmMap(row,language,comparison=null){
 
 const COMPARISON_COLORS=['#2563eb','#ea580c','#16a34a','#a21caf','#dc2626','#0891b2','#b45309','#4f46e5'];
 const LANG={
- de:{compareTitle:'Routenvergleich',compareInfo:'Jede GPX-Datei wird einzeln berechnet. Sortierung nach Effizienz.',compareEmpty:'Mindestens zwei erfolgreich berechnete GPX-Routen erforderlich.',compareCircle:'Kreis',compareSquare:'Quadrat',compareRank:'Rang',compareRoute:'Route',compareShow:'Anzeigen',compareFocus:'Hervorheben',compareAll:'Alle gleich',compareMap:'Vergleichskarte',compareOffline:'Ohne OSM-Karte werden alle Routen weiterhin lokal verglichen. Aktiviere OSM für die gemeinsame Kartenansicht.',compareWinner:'Beste Effizienz',osmMap:'OpenStreetMap-Karte',osmOn:'OSM-Karte anzeigen (Internet)',osmOff:'OSM-Karte ausschalten',fitRoute:'Gesamte Route anzeigen',osmInfo:'Beim Einschalten werden Kartenkacheln für den sichtbaren Bereich von OpenStreetMap geladen. GPX-Daten bleiben lokal.',chooseFiles:'Dateien auswählen',noFiles:'Keine Dateien ausgewählt',selectedFiles:n=>`${n} Datei(en) ausgewählt`,title:'GPX-Routen auswerten',intro:'Wähle eine oder mehrere GPX-Dateien. Die Daten bleiben auf deinem Gerät.',calc:'Routen berechnen',csv:'CSV speichern',results:'Ergebnisse',empty:'Noch keine Auswertung.',ready:'Bereit.',select:'Bitte GPX-Dateien auswählen.',processed:n=>`${n} Datei(en) verarbeitet. Alles bleibt lokal.`,distance:'Strecke',area:'Fläche',circle:'Kreis-Effizienz',square:'Quadrat-Effizienz',faces:'Teilflächen',faceBreakdown:'Einzelne Teilflächen',areaUnit:'Flächeneinheit',face:'Teilfläche',faceSum:'Summe der Teilflächen',faceNote:'Die Flächen stammen aus derselben Berechnung wie der Gesamtwert. Gerundete Einzelwerte können minimal abweichen.',start:'Start/Ziel',route:'Strecke',filled:'gezählte Fläche',update:'Neue Version verfügbar',updateAction:'Jetzt aktualisieren',updateNote:'Deine ausgewählten GPX-Dateien müssen danach gegebenenfalls erneut geöffnet werden.',upToDate:'Aktuelle Version',tabGpx:'GPX-Analyse',tabManual:'Manuell',manualHeading:'Manuelle Effizienzberechnung',manualIntro:'Streckenlänge und eingeschlossene Fläche eingeben. Die Berechnung erfolgt automatisch.',manualLength:'Streckenlänge (km)',manualArea:'Eingeschlossene Fläche (km²)',manualPrompt:'Bitte Länge und Fläche eingeben.',manualInvalid:'Bitte gültige Zahlen eingeben (Komma oder Punkt).',manualLengthInvalid:'Die Streckenlänge muss größer als 0 sein.',manualAreaInvalid:'Die Fläche darf nicht negativ sein.',manualCircleIdeal:'Ideale Kreisfläche',manualSquareIdeal:'Ideale Quadratfläche',manualWarning:'Die Fläche ist größer als die maximale Kreisfläche für diese Streckenlänge. Bitte die Eingaben und Messgrundlagen überprüfen.',themeLabel:'Design',themeSystem:'System',themeLight:'Hell',themeDark:'Dunkel',footer:'Lokale Berechnung · Die eingefärbten Teilflächen entsprechen der berechneten Fläche.',errors:{INVALID_XML:'Ungültige GPX/XML-Datei',NO_POINTS:'Keine Track- oder Routenpunkte gefunden',INVALID_COORDS:'Ungültige GPS-Koordinaten',DISCONNECTED:'Getrennte Track-Segmente: Fläche nicht zuverlässig',TOO_MANY_POINTS:'Zu viele GPX-Punkte für diese Version',OPEN_ROUTE:'Offene Route (Start–Ziel: {n} m)'},error:'FEHLER',noFaces:'Keine geschlossene Teilfläche erkannt'},
- en:{compareTitle:'Route comparison',compareInfo:'Each GPX file is calculated independently. Ranked by efficiency.',compareEmpty:'At least two successfully calculated GPX routes are required.',compareCircle:'Circle',compareSquare:'Square',compareRank:'Rank',compareRoute:'Route',compareShow:'Show',compareFocus:'Highlight',compareAll:'Equal emphasis',compareMap:'Comparison map',compareOffline:'All routes are compared locally even without OSM. Enable OSM for the combined map.',compareWinner:'Best efficiency',osmMap:'OpenStreetMap map',osmOn:'Show OSM map (internet)',osmOff:'Turn off OSM map',fitRoute:'Fit entire route',osmInfo:'Enabling the map downloads visible map tiles from OpenStreetMap. GPX data stays on your device.',chooseFiles:'Browse files',noFiles:'No files selected',selectedFiles:n=>`${n} file(s) selected`,title:'Analyze GPX routes',intro:'Select one or more GPX files. Your data stays on your device.',calc:'Analyze routes',csv:'Save CSV',results:'Results',empty:'No results yet.',ready:'Ready.',select:'Please select GPX files.',processed:n=>`${n} file(s) processed. Everything stays on your device.`,distance:'Distance',area:'Area',circle:'Circle efficiency',square:'Square efficiency',faces:'Enclosed regions',faceBreakdown:'Individual enclosed areas',areaUnit:'Area unit',face:'Area',faceSum:'Sum of enclosed areas',faceNote:'These values come from the same calculation as the total. Rounded figures may differ slightly.',start:'Start/finish',route:'Route',filled:'counted area',update:'New version available',updateAction:'Update now',updateNote:'You may need to select your GPX files again after updating.',upToDate:'Current version',tabGpx:'GPX analysis',tabManual:'Manual',manualHeading:'Manual efficiency calculator',manualIntro:'Enter the route distance and enclosed area. Results update automatically.',manualLength:'Route distance (km)',manualArea:'Enclosed area (km²)',manualPrompt:'Enter distance and area.',manualInvalid:'Please enter valid numbers (comma or decimal point).',manualLengthInvalid:'Distance must be greater than 0.',manualAreaInvalid:'Area cannot be negative.',manualCircleIdeal:'Ideal circle area',manualSquareIdeal:'Ideal square area',manualWarning:'The area exceeds the maximum circular area for this distance. Please check the inputs and measurement methods.',themeLabel:'Theme',themeSystem:'System',themeLight:'Light',themeDark:'Dark',footer:'Local calculations · Highlighted regions are the areas counted by the algorithm.',errors:{INVALID_XML:'Invalid GPX/XML file',NO_POINTS:'No track or route points found',INVALID_COORDS:'Invalid GPS coordinates',DISCONNECTED:'Disconnected track segments: area is unreliable',TOO_MANY_POINTS:'Too many GPX points for this version',OPEN_ROUTE:'Open route (start–finish: {n} m)'},error:'ERROR',noFaces:'No enclosed region detected'}
+ de:{compareButton:'Routen vergleichen',compareClose:'Vergleich schließen',compareSort:'Sortieren nach',compareEfficiency:'Kreis-Effizienz',compareAreaSort:'Gesamtfläche',compareTitle:'Routenvergleich',compareInfo:'Jede GPX-Datei wird einzeln berechnet. Vergleich auch ohne Internet möglich.',compareEmpty:'Mindestens zwei erfolgreich berechnete GPX-Routen erforderlich.',compareCircle:'Kreis',compareSquare:'Quadrat',compareRank:'Rang',compareRoute:'Route',compareShow:'Anzeigen',compareFocus:'Hervorheben',compareAll:'Alle gleich',compareMap:'Vergleichskarte',compareOffline:'Ohne OSM-Karte werden alle Routen weiterhin lokal verglichen. Aktiviere OSM für die gemeinsame Kartenansicht.',compareWinner:'Beste Effizienz',osmMap:'OpenStreetMap-Karte',osmOn:'OSM-Karte anzeigen (Internet)',osmOff:'OSM-Karte ausschalten',fitRoute:'Gesamte Route anzeigen',osmInfo:'Beim Einschalten werden Kartenkacheln für den sichtbaren Bereich von OpenStreetMap geladen. GPX-Daten bleiben lokal.',chooseFiles:'Dateien auswählen',noFiles:'Keine Dateien ausgewählt',selectedFiles:n=>`${n} Datei(en) ausgewählt`,title:'GPX-Routen auswerten',intro:'Wähle eine oder mehrere GPX-Dateien. Die Daten bleiben auf deinem Gerät.',calc:'Routen berechnen',csv:'CSV speichern',results:'Ergebnisse',empty:'Noch keine Auswertung.',ready:'Bereit.',select:'Bitte GPX-Dateien auswählen.',processed:n=>`${n} Datei(en) verarbeitet. Alles bleibt lokal.`,distance:'Strecke',area:'Fläche',circle:'Kreis-Effizienz',square:'Quadrat-Effizienz',faces:'Teilflächen',faceBreakdown:'Einzelne Teilflächen',areaUnit:'Flächeneinheit',face:'Teilfläche',faceSum:'Summe der Teilflächen',faceNote:'Die Flächen stammen aus derselben Berechnung wie der Gesamtwert. Gerundete Einzelwerte können minimal abweichen.',start:'Start/Ziel',route:'Strecke',filled:'gezählte Fläche',update:'Neue Version verfügbar',updateAction:'Jetzt aktualisieren',updateNote:'Deine ausgewählten GPX-Dateien müssen danach gegebenenfalls erneut geöffnet werden.',upToDate:'Aktuelle Version',tabGpx:'GPX-Analyse',tabManual:'Manuell',manualHeading:'Manuelle Effizienzberechnung',manualIntro:'Streckenlänge und eingeschlossene Fläche eingeben. Die Berechnung erfolgt automatisch.',manualLength:'Streckenlänge (km)',manualArea:'Eingeschlossene Fläche (km²)',manualPrompt:'Bitte Länge und Fläche eingeben.',manualInvalid:'Bitte gültige Zahlen eingeben (Komma oder Punkt).',manualLengthInvalid:'Die Streckenlänge muss größer als 0 sein.',manualAreaInvalid:'Die Fläche darf nicht negativ sein.',manualCircleIdeal:'Ideale Kreisfläche',manualSquareIdeal:'Ideale Quadratfläche',manualWarning:'Die Fläche ist größer als die maximale Kreisfläche für diese Streckenlänge. Bitte die Eingaben und Messgrundlagen überprüfen.',themeLabel:'Design',themeSystem:'System',themeLight:'Hell',themeDark:'Dunkel',footer:'Lokale Berechnung · Die eingefärbten Teilflächen entsprechen der berechneten Fläche.',errors:{INVALID_XML:'Ungültige GPX/XML-Datei',NO_POINTS:'Keine Track- oder Routenpunkte gefunden',INVALID_COORDS:'Ungültige GPS-Koordinaten',DISCONNECTED:'Getrennte Track-Segmente: Fläche nicht zuverlässig',TOO_MANY_POINTS:'Zu viele GPX-Punkte für diese Version',OPEN_ROUTE:'Offene Route (Start–Ziel: {n} m)'},error:'FEHLER',noFaces:'Keine geschlossene Teilfläche erkannt'},
+ en:{compareButton:'Compare routes',compareClose:'Close comparison',compareSort:'Sort by',compareEfficiency:'Circle efficiency',compareAreaSort:'Total area',compareTitle:'Route comparison',compareInfo:'Each GPX file is calculated independently. Comparison also works offline.',compareEmpty:'At least two successfully calculated GPX routes are required.',compareCircle:'Circle',compareSquare:'Square',compareRank:'Rank',compareRoute:'Route',compareShow:'Show',compareFocus:'Highlight',compareAll:'Equal emphasis',compareMap:'Comparison map',compareOffline:'All routes are compared locally even without OSM. Enable OSM for the combined map.',compareWinner:'Best efficiency',osmMap:'OpenStreetMap map',osmOn:'Show OSM map (internet)',osmOff:'Turn off OSM map',fitRoute:'Fit entire route',osmInfo:'Enabling the map downloads visible map tiles from OpenStreetMap. GPX data stays on your device.',chooseFiles:'Browse files',noFiles:'No files selected',selectedFiles:n=>`${n} file(s) selected`,title:'Analyze GPX routes',intro:'Select one or more GPX files. Your data stays on your device.',calc:'Analyze routes',csv:'Save CSV',results:'Results',empty:'No results yet.',ready:'Ready.',select:'Please select GPX files.',processed:n=>`${n} file(s) processed. Everything stays on your device.`,distance:'Distance',area:'Area',circle:'Circle efficiency',square:'Square efficiency',faces:'Enclosed regions',faceBreakdown:'Individual enclosed areas',areaUnit:'Area unit',face:'Area',faceSum:'Sum of enclosed areas',faceNote:'These values come from the same calculation as the total. Rounded figures may differ slightly.',start:'Start/finish',route:'Route',filled:'counted area',update:'New version available',updateAction:'Update now',updateNote:'You may need to select your GPX files again after updating.',upToDate:'Current version',tabGpx:'GPX analysis',tabManual:'Manual',manualHeading:'Manual efficiency calculator',manualIntro:'Enter the route distance and enclosed area. Results update automatically.',manualLength:'Route distance (km)',manualArea:'Enclosed area (km²)',manualPrompt:'Enter distance and area.',manualInvalid:'Please enter valid numbers (comma or decimal point).',manualLengthInvalid:'Distance must be greater than 0.',manualAreaInvalid:'Area cannot be negative.',manualCircleIdeal:'Ideal circle area',manualSquareIdeal:'Ideal square area',manualWarning:'The area exceeds the maximum circular area for this distance. Please check the inputs and measurement methods.',themeLabel:'Theme',themeSystem:'System',themeLight:'Light',themeDark:'Dark',footer:'Local calculations · Highlighted regions are the areas counted by the algorithm.',errors:{INVALID_XML:'Invalid GPX/XML file',NO_POINTS:'No track or route points found',INVALID_COORDS:'Invalid GPS coordinates',DISCONNECTED:'Disconnected track segments: area is unreliable',TOO_MANY_POINTS:'Too many GPX points for this version',OPEN_ROUTE:'Open route (start–finish: {n} m)'},error:'ERROR',noFaces:'No enclosed region detected'}
 };
 function translateError(message,lang){const t=LANG[lang],parts=String(message).split(':');return (t.errors[parts[0]]||message).replace('{n}',parts[1]||'');}
 if(typeof module!=='undefined')module.exports={evaluate,facesArea,translateError};
 if(typeof document!=='undefined'){
  const el=id=>document.getElementById(id);
- let language=localStorage.getItem('intvl-language')==='en'?'en':'de',rows=[],busy=false,activeView='gpx',areaUnit='km2',osmEnabled=false,activeMaps=[],compareMetric='circle',compareVisible=new Set(),compareHighlight=null;
+ let language=localStorage.getItem('intvl-language')==='en'?'en':'de',rows=[],busy=false,activeView='gpx',areaUnit='km2',osmEnabled=false,activeMaps=[],compareMetric='efficiency',compareVisible=new Set(),compareHighlight=null,compareOpen=false,compareAreaUnit='km2';
  function setAreaUnit(unit){
   if(unit!=='km2'&&unit!=='m2')return;
   areaUnit=unit;
@@ -182,6 +182,7 @@ if(typeof document!=='undefined'){
   for(const [value,key] of [['system','themeSystem'],['light','themeLight'],['dark','themeDark']])Array.from(themeSelect.options).find(option=>option.value===value).textContent=t()[key];
   for(const [id,key] of Object.entries({heading:'title',intro:'intro',calc:'calc',export:'csv',resultHeading:'results',footerText:'footer'}))el(id).textContent=t()[key];
   for(const [id,key] of Object.entries({tabGpx:'tabGpx',tabManual:'tabManual',manualHeading:'manualHeading',manualIntro:'manualIntro',manualLengthLabel:'manualLength',manualAreaLabel:'manualArea'}))el(id).textContent=t()[key];
+  el('compareToggle').textContent=compareOpen?t().compareClose:t().compareButton;el('compareToggle').disabled=rows.filter(r=>r.Strecke_km!==undefined&&r.Teilflaechen>0).length<2;el('compareToggle').setAttribute('aria-expanded',String(compareOpen));
   el('osmToggle').textContent=osmEnabled?t().osmOff:t().osmOn;el('osmToggle').setAttribute('aria-pressed',String(osmEnabled));el('osmInfo').textContent=t().osmInfo;
   el('results').dataset.empty=t().empty;el('filePickerLabel').textContent=t().chooseFiles;updateFileSelection();
   renderManual();
@@ -196,26 +197,38 @@ if(typeof document!=='undefined'){
  };
 
  function renderComparison(){
-  const host=el('comparison');host.replaceChildren();const valid=rows.filter(r=>r.Strecke_km!==undefined&&r.Teilflaechen>0);
-  if(valid.length<2)return;
+  const host=el('comparison');host.replaceChildren();
+  const valid=rows.filter(r=>r.Strecke_km!==undefined&&r.Teilflaechen>0);
+  if(!compareOpen||valid.length<2)return;
   const title=document.createElement('h2');title.textContent=t().compareTitle;host.append(title);
   const intro=document.createElement('p');intro.className='small';intro.textContent=t().compareInfo;host.append(intro);
-  const select=document.createElement('select');select.className='compare-select';select.setAttribute('aria-label',t().compareTitle);
-  for(const [value,label] of [['circle',t().compareCircle],['square',t().compareSquare]]){const o=document.createElement('option');o.value=value;o.textContent=label;select.append(o)}
-  select.value=compareMetric;select.addEventListener('change',()=>{compareMetric=select.value;renderComparison()});host.append(select);
-  const key=compareMetric==='circle'?'Kreis_Effizienz_Prozent':'Quadrat_Effizienz_Prozent';
-  const sorted=[...valid].sort((a,b)=>b[key]-a[key]);
-  const table=document.createElement('table');table.className='compare-table';
-  const head=document.createElement('thead'),hr=document.createElement('tr');
-  for(const label of ['#',t().compareRoute,t().distance+' (km)',t().area+' (km²)',t().compareMetric|| (compareMetric==='circle'?t().compareCircle:t().compareSquare)+' (%)']){const th=document.createElement('th');th.textContent=label;hr.append(th)}head.append(hr);table.append(head);
+  const toolbar=document.createElement('div');toolbar.className='compare-toolbar';
+  const sort=document.createElement('select');sort.className='compare-select';sort.setAttribute('aria-label',t().compareSort);
+  for(const [value,label] of [['efficiency',t().compareEfficiency],['area',t().compareAreaSort]]){const o=document.createElement('option');o.value=value;o.textContent=label;sort.append(o)}
+  sort.value=compareMetric;sort.addEventListener('change',()=>{compareMetric=sort.value;renderComparison()});toolbar.append(sort);
+  const units=document.createElement('div');units.className='unit-control';units.setAttribute('aria-label',t().areaUnit);
+  for(const [value,label] of [['km2','km²'],['m2','m²']]){const btn=document.createElement('button');btn.type='button';btn.className='unit-button'+(compareAreaUnit===value?' active':'');btn.textContent=label;btn.setAttribute('aria-pressed',String(compareAreaUnit===value));btn.addEventListener('click',()=>{compareAreaUnit=value;renderComparison()});units.append(btn)}
+  toolbar.append(units);host.append(toolbar);
+  const sorted=[...valid].sort((a,b)=>compareMetric==='area'?b.Flaeche_km2-a.Flaeche_km2:b.Kreis_Effizienz_Prozent-a.Kreis_Effizienz_Prozent);
+  const areaText=r=>compareAreaUnit==='km2'?fmt(r.Flaeche_km2,2)+' km²':fmt(r.Flaeche_km2*1e6,2)+' m²';
+  const table=document.createElement('table');table.className='compare-table';const head=document.createElement('thead'),hr=document.createElement('tr');
+  for(const label of ['#',t().compareRoute,t().distance+' (km)',t().area+' ('+(compareAreaUnit==='km2'?'km²':'m²')+')',t().compareEfficiency+' (%)']){const th=document.createElement('th');th.textContent=label;hr.append(th)}head.append(hr);table.append(head);
   const body=document.createElement('tbody');
   for(const [rank,r] of sorted.entries()){
    const tr=document.createElement('tr');const color=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];
-   for(const [i,value] of [String(rank+1),r.Datei,fmt(r.Strecke_km,2),fmt(r.Flaeche_km2,2),fmt(r[key],2)+' %'].entries()){
+   for(const [i,value] of [String(rank+1),r.Datei,fmt(r.Strecke_km,2),areaText(r),fmt(r.Kreis_Effizienz_Prozent,2)+' %'].entries()){
     const td=document.createElement('td');td.textContent=value;if(i===1){td.className='compare-name';td.style.borderLeft='5px solid '+color}if(i===4&&rank===0)td.classList.add('compare-best');tr.append(td)
    }body.append(tr);
   }table.append(body);const scroll=document.createElement('div');scroll.className='compare-scroll';scroll.append(table);host.append(scroll);
-  if(!osmEnabled){const note=document.createElement('p');note.className='small';note.textContent=t().compareOffline;host.append(note);return}
+  const cards=document.createElement('div');cards.className='compare-cards';
+  for(const [rank,r] of sorted.entries()){
+   const card=document.createElement('article');card.className='compare-card';card.style.borderLeftColor=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];
+   const name=document.createElement('strong');name.className='compare-card-name';name.textContent='#'+(rank+1)+' · '+r.Datei;card.append(name);
+   const metrics=document.createElement('div');metrics.className='compare-card-metrics';
+   for(const [label,value] of [[t().distance,fmt(r.Strecke_km,2)+' km'],[t().area,areaText(r)],[t().compareEfficiency,fmt(r.Kreis_Effizienz_Prozent,2)+' %']]){
+    const item=document.createElement('div'),caption=document.createElement('span'),number=document.createElement('strong');caption.textContent=label;number.textContent=value;item.append(caption,number);metrics.append(item)
+   }card.append(metrics);cards.append(card);
+  }host.append(cards);
   const heading=document.createElement('h3');heading.textContent=t().compareMap;host.append(heading);
   const options=document.createElement('div');options.className='compare-options';
   for(const [i,r] of valid.entries()){
@@ -230,11 +243,33 @@ if(typeof document!=='undefined'){
   for(const r of valid){opt=document.createElement('option');opt.value=r.Datei;opt.textContent=r.Datei;focus.append(opt)}
   focus.value=compareHighlight||'';focus.addEventListener('change',()=>{compareHighlight=focus.value||null;renderComparison()});host.append(focus);
   const visible=valid.filter(r=>compareVisible.has(r.Datei));
-  if(visible.length){const map=createOsmMap(visible[0],language,{routes:valid,visible:compareVisible,highlight:compareHighlight});activeMaps.push(map);host.append(map.element)}
+  if(visible.length){
+   if(osmEnabled){const map=createOsmMap(visible[0],language,{routes:valid,visible:compareVisible,highlight:compareHighlight});activeMaps.push(map);host.append(map.element)}
+   else host.append(renderComparisonOffline(valid,compareVisible,compareHighlight));
+  }
+ }
+ function renderComparisonOffline(routes,visible,highlight){
+  const NS='http://www.w3.org/2000/svg';const node=(tag,attrs={})=>{const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);return e};
+  const host=document.createElement('div');host.className='route-map compare-offline-map';
+  const shown=routes.filter(r=>visible.has(r.Datei));const coords=shown.flatMap(r=>r._geo);
+  const rad=Math.PI/180,lat0=coords.reduce((sum,p)=>sum+p[1],0)/coords.length*rad;
+  const project=p=>[p[0]*rad*6371000*Math.cos(lat0),p[1]*rad*6371000];
+  const pts=coords.map(project),xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);const minx=Math.min(...xs),maxx=Math.max(...xs),miny=Math.min(...ys),maxy=Math.max(...ys);
+  const w=640,h=390,pad=24,scale=Math.min((w-2*pad)/Math.max(maxx-minx,1),(h-2*pad)/Math.max(maxy-miny,1));
+  const x0=(w-(maxx-minx)*scale)/2,y0=(h-(maxy-miny)*scale)/2;
+  const point=p=>{const q=project(p);return [x0+(q[0]-minx)*scale,h-y0-(q[1]-miny)*scale]};
+  const svg=node('svg',{viewBox:`0 0 ${w} ${h}`,role:'img','aria-label':t().compareMap});svg.style.cssText='width:100%;height:auto;display:block';
+  svg.append(node('rect',{width:w,height:h,fill:'#f3f8f3'}));
+  for(let x=40;x<w;x+=40)svg.append(node('line',{x1:x,y1:0,x2:x,y2:h,stroke:'#e3eee4','stroke-width':1}));
+  for(let y=30;y<h;y+=40)svg.append(node('line',{x1:0,y1:y,x2:w,y2:y,stroke:'#e3eee4','stroke-width':1}));
+  routes.forEach((r,i)=>{if(!visible.has(r.Datei))return;const d=r._geo.map((p,j)=>{const q=point(p);return(j?'L':'M')+q[0].toFixed(2)+' '+q[1].toFixed(2)}).join(' ');
+   const selected=highlight===r.Datei;svg.append(node('path',{d,fill:'none',stroke:COMPARISON_COLORS[i%COMPARISON_COLORS.length],'stroke-width':selected?5:3.3,'stroke-opacity':highlight&&!selected?.28:1,'stroke-linejoin':'round','stroke-linecap':'round'}));
+  });host.append(svg);return host;
  }
 
  function updateFileSelection(){const n=el('files').files.length;el('selectedFiles').textContent=n?t().selectedFiles(n):t().noFiles}
  el('files').addEventListener('change',updateFileSelection);
+ el('compareToggle').addEventListener('click',()=>{compareOpen=!compareOpen;render()});
  el('osmToggle').addEventListener('click',()=>{osmEnabled=!osmEnabled;render()});
  const numberInput=value=>{
   const s=String(value).trim().replace(/\s/g,'');
@@ -271,7 +306,7 @@ if(typeof document!=='undefined'){
  for(const id of ['manualLength','manualArea'])el(id).addEventListener('input',renderManual);
  // Swipe between views only when starting on noninteractive page content.
  let touchStart=null;
- const swipeExcluded=target=>target.closest('input,button,select,textarea,a,.route-map,.osm-map,.face-details,.view-tabs');
+ const swipeExcluded=target=>target.closest('input,button,select,textarea,a,.route-map,.osm-map,.face-details,.view-tabs,.comparison,.compare-toolbar,.compare-scroll,.compare-cards');
  for(const id of ['viewGpx','viewManual']){
   const panel=el(id);
   panel.addEventListener('touchstart',e=>{
@@ -297,7 +332,7 @@ if(typeof document!=='undefined'){
  el('calc').onclick=async()=>{
   const files=Array.from(el('files').files);
   if(!files.length){el('status').textContent=t().select;return}
-  rows=[];compareVisible=new Set();compareHighlight=null;busy=true;el('calc').disabled=true;el('export').disabled=true;
+  rows=[];compareVisible=new Set();compareHighlight=null;compareOpen=false;busy=true;el('calc').disabled=true;el('export').disabled=true;
   el('results').replaceChildren();
   el('status').textContent=language==='de'?'Berechnung läuft …':'Calculating …';
   try{
