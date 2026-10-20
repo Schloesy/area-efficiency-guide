@@ -34,14 +34,14 @@ function interiorLabelPoint(ring){
  for(let i=1;i<ring.length-1;i++){const a=ring[0],b=ring[i],c=ring[i+1];const p=[(a[0]+b[0]+c[0])/3,(a[1]+b[1]+c[1])/3];if(pointInPolygon(p,ring))return p;}
  return ring[0];
 }
-function renderFaceDetails(row,lang,fmt,unit){
+function renderFaceDetails(row,lang,fmt,unit,onUnitChange){
  const section=document.createElement('section');section.className='face-details';
  const head=document.createElement('div');head.className='face-header';
  const heading=document.createElement('h4');heading.textContent=lang.faceBreakdown;head.append(heading);
  const control=document.createElement('div');control.className='unit-control';control.setAttribute('role','group');control.setAttribute('aria-label',lang.areaUnit);
  for(const [value,label] of [['km2','km²'],['m2','m²']]){
   const button=document.createElement('button');button.type='button';button.className='unit-button'+(unit===value?' active':'');button.textContent=label;button.setAttribute('aria-pressed',String(unit===value));
-  button.addEventListener('click',()=>{if(areaUnit!==value){areaUnit=value;document.querySelectorAll('.face-details').forEach(section=>updateFaceUnits(section,areaUnit,fmt));}});
+  button.dataset.unit=value;button.addEventListener('click',()=>onUnitChange(value));
   control.append(button);
  }
  head.append(control);section.append(head);
@@ -61,7 +61,7 @@ function updateFaceUnits(section,unit,fmt){
   const area=Number(cell.dataset.areaM2);cell.textContent=unit==='km2'?fmt(area/1e6,2)+' km²':fmt(area,2)+' m²';
  }
  for(const button of section.querySelectorAll('.unit-button')){
-  const selected=(button.textContent==='km²'?'km2':'m2')===unit;
+  const selected=button.dataset.unit===unit;
   button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected));
  }
 }
@@ -150,6 +150,11 @@ if(typeof module!=='undefined')module.exports={evaluate,facesArea,translateError
 if(typeof document!=='undefined'){
  const el=id=>document.getElementById(id);
  let language=localStorage.getItem('intvl-language')==='en'?'en':'de',rows=[],busy=false,activeView='gpx',areaUnit='km2',osmEnabled=false,activeMaps=[];
+ function setAreaUnit(unit){
+  if(unit!=='km2'&&unit!=='m2')return;
+  areaUnit=unit;
+  document.querySelectorAll('.face-details').forEach(section=>updateFaceUnits(section,areaUnit,fmt));
+ }
  const themeSelect=el('themeMode');
  const storedTheme=localStorage.getItem('intvl-theme');
  themeSelect.value=['system','light','dark'].includes(storedTheme)?storedTheme:'system';
@@ -177,7 +182,7 @@ if(typeof document!=='undefined'){
   el('updateTitle').textContent=t().update;el('updateButton').textContent=t().updateAction;el('updateNote').textContent=t().updateNote;
   for(const m of activeMaps)m.destroy();activeMaps=[];const results=el('results');results.replaceChildren();
   for(const row of rows){const div=document.createElement('div');div.className='route';const title=document.createElement('h3');title.textContent=row.Datei;div.append(title);
-   if(row.Strecke_km!==undefined){try{const mapSlot=document.createElement('div');if(osmEnabled){const m=createOsmMap(row,language);activeMaps.push(m);mapSlot.append(m.element)}else mapSlot.append(renderRoute(row));div.append(mapSlot)}catch(e){const warning=document.createElement('p');warning.className='small error';warning.textContent='Route display: '+e.message;div.append(warning)}const stats=document.createElement('div');stats.className='stats';for(const [label,value] of [[t().distance,fmt(row.Strecke_km,2)+' km'],[t().area,fmt(row.Flaeche_km2,2)+' km²'],[t().circle,fmt(row.Kreis_Effizienz_Prozent,2)+' %'],[t().square,fmt(row.Quadrat_Effizienz_Prozent,2)+' %']]){const box=document.createElement('div'),small=document.createElement('span'),strong=document.createElement('strong');box.className='stat';small.textContent=label;strong.textContent=value;box.append(small,strong);stats.append(box)}div.append(stats);if(row._faceAreas&&row._faceAreas.length)div.append(renderFaceDetails(row,t(),fmt,areaUnit))}
+   if(row.Strecke_km!==undefined){try{const mapSlot=document.createElement('div');if(osmEnabled){const m=createOsmMap(row,language);activeMaps.push(m);mapSlot.append(m.element)}else mapSlot.append(renderRoute(row));div.append(mapSlot)}catch(e){const warning=document.createElement('p');warning.className='small error';warning.textContent='Route display: '+e.message;div.append(warning)}const stats=document.createElement('div');stats.className='stats';for(const [label,value] of [[t().distance,fmt(row.Strecke_km,2)+' km'],[t().area,fmt(row.Flaeche_km2,2)+' km²'],[t().circle,fmt(row.Kreis_Effizienz_Prozent,2)+' %'],[t().square,fmt(row.Quadrat_Effizienz_Prozent,2)+' %']]){const box=document.createElement('div'),small=document.createElement('span'),strong=document.createElement('strong');box.className='stat';small.textContent=label;strong.textContent=value;box.append(small,strong);stats.append(box)}div.append(stats);if(row._faceAreas&&row._faceAreas.length)div.append(renderFaceDetails(row,t(),fmt,areaUnit,setAreaUnit))}
    const info=document.createElement('p');info.className=row.Strecke_km===undefined?'small error':'small';info.textContent=row.Strecke_km===undefined?t().error+': '+translateError(row._error,language):(row.Teilflaechen?'OK':t().noFaces)+' · '+t().faces+': '+row.Teilflaechen;div.append(info);results.append(div);
   }
  };
@@ -226,6 +231,13 @@ if(typeof document!=='undefined'){
    if(e.touches.length!==1||swipeExcluded(e.target)){touchStart=null;return}
    touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};
   },{passive:true});
+  // Prevent the browser's horizontal rubber-band while preserving vertical scroll.
+  panel.addEventListener('touchmove',e=>{
+   if(!touchStart||e.touches.length!==1)return;
+   const dx=e.touches[0].clientX-touchStart.x;
+   const dy=e.touches[0].clientY-touchStart.y;
+   if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.6&&e.cancelable)e.preventDefault();
+  },{passive:false});
   panel.addEventListener('touchend',e=>{
    if(!touchStart||!e.changedTouches.length)return;
    const dx=e.changedTouches[0].clientX-touchStart.x,dy=e.changedTouches[0].clientY-touchStart.y;
