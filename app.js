@@ -222,7 +222,7 @@ if(typeof document!=='undefined'){
   for(const [rank,r] of sorted.entries()){
    const tr=document.createElement('tr');const color=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];
    for(const [i,value] of [String(rank+1),r.Datei,fmt(r.Strecke_km,2),areaText(r),fmt(r.Kreis_Effizienz_Prozent,2)+' %'].entries()){
-    const td=document.createElement('td');td.textContent=value;if(i===1){td.className='compare-name';td.style.borderLeft='5px solid '+color}if(i===4&&rank===0)td.classList.add('compare-best');tr.append(td)
+    const td=document.createElement('td');td.textContent=value;if(i===1){td.className='compare-name';td.style.borderLeft='5px solid '+color}if(rank===0&&i===(compareMetric==='area'?3:4))td.classList.add('compare-best');tr.append(td)
    }body.append(tr);
   }table.append(body);const scroll=document.createElement('div');scroll.className='compare-scroll';scroll.append(table);host.append(scroll);
   const cards=document.createElement('div');cards.className='compare-cards';
@@ -230,8 +230,8 @@ if(typeof document!=='undefined'){
    const card=document.createElement('article');card.className='compare-card';card.style.borderLeftColor=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];
    const name=document.createElement('strong');name.className='compare-card-name';name.textContent='#'+(rank+1)+' · '+r.Datei;card.append(name);
    const metrics=document.createElement('div');metrics.className='compare-card-metrics';
-   for(const [label,value] of [[t().distance,fmt(r.Strecke_km,2)+' km'],[t().area,areaText(r)],[t().compareEfficiency,fmt(r.Kreis_Effizienz_Prozent,2)+' %']]){
-    const item=document.createElement('div'),caption=document.createElement('span'),number=document.createElement('strong');caption.textContent=label;number.textContent=value;item.append(caption,number);metrics.append(item)
+   for(const [metricIndex,[label,value]] of [[t().distance,fmt(r.Strecke_km,2)+' km'],[t().area,areaText(r)],[t().compareEfficiency,fmt(r.Kreis_Effizienz_Prozent,2)+' %']].entries()){
+    const item=document.createElement('div'),caption=document.createElement('span'),number=document.createElement('strong');caption.textContent=label;number.textContent=value;if(rank===0&&metricIndex===(compareMetric==='area'?1:2))number.classList.add('compare-best');item.append(caption,number);metrics.append(item)
    }card.append(metrics);cards.append(card);
   }host.append(cards);
   const heading=document.createElement('h3');heading.textContent=t().compareMap;host.append(heading);
