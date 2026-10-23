@@ -285,7 +285,7 @@ if(typeof document!=='undefined'){
   const w=640,h=390,pad=24,scale=Math.min((w-2*pad)/Math.max(maxx-minx,1),(h-2*pad)/Math.max(maxy-miny,1));
   const x0=(w-(maxx-minx)*scale)/2,y0=(h-(maxy-miny)*scale)/2;
   const point=p=>{const q=project(p);return [x0+(q[0]-minx)*scale,h-y0-(q[1]-miny)*scale]};
-  const svg=node('svg',{viewBox:`0 0 ${w} ${h}`,role:'img','aria-label':t().compareMap});svg.classList.add('compare-offline-svg');
+  const svg=node('svg',{viewBox:`0 0 ${w} ${h}`,'preserveAspectRatio':'none',role:'img','aria-label':t().compareMap});svg.classList.add('compare-offline-svg');
   // Draw the grid in map coordinates so it pans and zooms together with the routes.
   // Its own SVG fills the complete viewport, including the space around the route drawing.
   const gridSvg=node('svg',{viewBox:`0 0 ${w} ${h}`,'preserveAspectRatio':'none','aria-hidden':'true'});
@@ -297,17 +297,33 @@ if(typeof document!=='undefined'){
   drawOrder.forEach(r=>{const i=routes.indexOf(r);if(!visible.has(r.Datei))return;const d=r._geo.map((p,j)=>{const q=point(p);return(j?'L':'M')+q[0].toFixed(2)+' '+q[1].toFixed(2)}).join(' ');
    const selected=highlight===r.Datei;svg.append(node('path',{d,fill:'none',stroke:COMPARISON_COLORS[i%COMPARISON_COLORS.length],'stroke-width':selected?5:3.3,'stroke-opacity':highlight&&!selected?.28:1,'stroke-linejoin':'round','stroke-linecap':'round'}));
   });
+  // Use one aspect-correct viewport for BOTH SVG layers. A fixed 640x390
+  // viewBox letterboxes the route on portrait phones while the grid stretches;
+  // that caused rectangular cells and different vertical pan speeds.
   let state=comparisonMapState&&comparisonMapState.kind==='offline'?{...comparisonMapState}:{kind:'offline',x:0,y:0,w,h};
-  const apply=()=>{const view=`${state.x} ${state.y} ${state.w} ${state.h}`;svg.setAttribute('viewBox',view);gridSvg.setAttribute('viewBox',view)};
-  const fit=()=>{state={kind:'offline',x:0,y:0,w,h};apply()};apply();
-  const zoomAt=(factor,x,y)=>{const r=svg.getBoundingClientRect(),px=(x-r.left)/r.width,py=(y-r.top)/r.height;const newW=Math.max(10,Math.min(w*8,state.w*factor)),newH=newW*h/w;state.x+=(state.w-newW)*px;state.y+=(state.h-newH)*py;state.w=newW;state.h=newH;apply()};
+  let currentView=null;
+  const viewportSize=()=>{const r=host.getBoundingClientRect();return [Math.max(r.width,1),Math.max(r.height,1)]};
+  const viewForScreen=()=>{const [pw,ph]=viewportSize(),aspect=pw/ph;let vw=state.w,vh=state.h;
+   if(vw/vh<aspect)vw=vh*aspect;else vh=vw/aspect;
+   return {x:state.x+(state.w-vw)/2,y:state.y+(state.h-vh)/2,w:vw,h:vh};
+  };
+  const apply=()=>{currentView=viewForScreen();const v=currentView,view=`${v.x} ${v.y} ${v.w} ${v.h}`;svg.setAttribute('viewBox',view);gridSvg.setAttribute('viewBox',view)};
+  const fit=()=>{state={kind:'offline',x:0,y:0,w,h};apply()};
+  const zoomAt=(factor,x,y)=>{const r=svg.getBoundingClientRect(),px=(x-r.left)/r.width,py=(y-r.top)/r.height;
+   const before=viewForScreen(),anchorX=before.x+px*before.w,anchorY=before.y+py*before.h;
+   const newW=Math.max(10,Math.min(w*8,state.w*factor)),newH=state.h*newW/state.w;
+   state.w=newW;state.h=newH;
+   const [pw,ph]=viewportSize(),aspect=pw/ph;let vw=newW,vh=newH;if(vw/vh<aspect)vw=vh*aspect;else vh=vw/aspect;
+   state.x=anchorX-px*vw-(newW-vw)/2;state.y=anchorY-py*vh-(newH-vh)/2;apply()};
+  apply();
+  if(typeof ResizeObserver!=='undefined'){const observer=new ResizeObserver(()=>apply());observer.observe(host);host._mapResizeObserver=observer}
   svg.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.deltaY<0?.83:1.2,e.clientX,e.clientY)},{passive:false});
   const pointers=new Map();let lastPinch=null;
   svg.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;svg.setPointerCapture(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);lastPinch=null});
-  svg.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;const prev=pointers.get(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);if(pointers.size===1){const r=svg.getBoundingClientRect();state.x-=(e.clientX-prev[0])/r.width*state.w;state.y-=(e.clientY-prev[1])/r.height*state.h;apply()}else if(pointers.size===2){const a=[...pointers.values()],dist=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);if(lastPinch)zoomAt(lastPinch/dist,(a[0][0]+a[1][0])/2,(a[0][1]+a[1][1])/2);lastPinch=dist}});
+  svg.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;const prev=pointers.get(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);if(pointers.size===1){const r=svg.getBoundingClientRect();const v=viewForScreen();state.x-=(e.clientX-prev[0])/r.width*v.w;state.y-=(e.clientY-prev[1])/r.height*v.h;apply()}else if(pointers.size===2){const a=[...pointers.values()],dist=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);if(lastPinch)zoomAt(lastPinch/dist,(a[0][0]+a[1][0])/2,(a[0][1]+a[1][1])/2);lastPinch=dist}});
   for(const event of ['pointerup','pointercancel','lostpointercapture'])svg.addEventListener(event,e=>{pointers.delete(e.pointerId);lastPinch=null});
   host.append(gridSvg,svg);const fitBtn=document.createElement('button');fitBtn.type='button';fitBtn.className='osm-control compare-offline-fit';fitBtn.textContent='⛶';fitBtn.title=t().fitRoute;fitBtn.setAttribute('aria-label',t().fitRoute);fitBtn.addEventListener('click',fit);host.append(fitBtn);
-  host._mapController={getState:()=>({...state})};return host;
+  host._mapController={getState:()=>({...state}),destroy:()=>host._mapResizeObserver?.disconnect()};return host;
  }
 
  function updateFileSelection(){const n=el('files').files.length;el('selectedFiles').textContent=n?t().selectedFiles(n):t().noFiles}
