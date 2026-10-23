@@ -128,7 +128,7 @@ function createOsmMap(row,language,comparison=null){
  const inverse=p=>{const [lon0,lat0]=row._projection,xx=p[0]/R,yy=p[1]/R,rho=Math.hypot(xx,yy);if(rho<1e-12)return [lon0*180/Math.PI,lat0*180/Math.PI];const c=2*Math.asin(Math.min(1,rho/2)),lat=Math.asin(Math.cos(c)*Math.sin(lat0)+yy*Math.sin(c)*Math.cos(lat0)/rho),lon=lon0+Math.atan2(xx*Math.sin(c),rho*Math.cos(lat0)*Math.cos(c)-yy*Math.sin(lat0)*Math.sin(c));return [lon*180/Math.PI,lat*180/Math.PI]};
  const pt=p=>project(merc(inverse(p)));const d=points=>points.map((p,i)=>{const q=pt(p);return (i?'L':'M')+q[0].toFixed(2)+' '+q[1].toFixed(2)}).join(' ');
  if(!comparison)for(let i=0;i<row._rings.length;i++){const ring=row._rings[i];overlay.append(node('path',{d:d(ring)+' Z',fill:i%2?'#8fc9e4':'#82cfa0','fill-opacity':'.34',stroke:'none'}));const [x,y]=pt(interiorLabelPoint(ring));overlay.append(node('circle',{cx:x,cy:y,r:12,fill:'#fff','fill-opacity':'.9',stroke:'#176c51','stroke-width':1.5}));const text=node('text',{x,y:y+4,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#176c51'});text.textContent=faceLabel(i);overlay.append(text)}
- if(comparison){for(const [i,r] of comparison.routes.entries()){
+ if(comparison){for(const r of comparison.drawOrder){const i=comparison.routes.indexOf(r);
  if(!comparison.visible.has(r.Datei))continue;
  const xy=r._geo.map(p=>project(merc(p)));const path=xy.map((p,j)=>(j?'L':'M')+p[0].toFixed(2)+' '+p[1].toFixed(2)).join(' ');
  const color=COMPARISON_COLORS[i%COMPARISON_COLORS.length],selected=comparison.highlight===r.Datei;
@@ -210,6 +210,7 @@ if(typeof document!=='undefined'){
   for(const [value,label] of [['km2','km²'],['m2','m²']]){const btn=document.createElement('button');btn.type='button';btn.className='unit-button'+(compareAreaUnit===value?' active':'');btn.textContent=label;btn.setAttribute('aria-pressed',String(compareAreaUnit===value));btn.addEventListener('click',()=>{compareAreaUnit=value;renderComparison()});units.append(btn)}
   toolbar.append(units);host.append(toolbar);
   const sorted=[...valid].sort((a,b)=>compareMetric==='area'?b.Flaeche_km2-a.Flaeche_km2:b.Kreis_Effizienz_Prozent-a.Kreis_Effizienz_Prozent);
+  const drawOrder=[...sorted].reverse().sort((a,b)=>Number(a.Datei===compareHighlight)-Number(b.Datei===compareHighlight));
   const areaText=r=>compareAreaUnit==='km2'?fmt(r.Flaeche_km2,2)+' km²':fmt(r.Flaeche_km2*1e6,2)+' m²';
   const table=document.createElement('table');table.className='compare-table';const head=document.createElement('thead'),hr=document.createElement('tr');
   for(const label of ['#',t().compareRoute,t().distance+' (km)',t().area+' ('+(compareAreaUnit==='km2'?'km²':'m²')+')',t().compareEfficiency+' (%)']){const th=document.createElement('th');th.textContent=label;hr.append(th)}head.append(hr);table.append(head);
@@ -230,29 +231,41 @@ if(typeof document!=='undefined'){
    }card.append(metrics);cards.append(card);
   }host.append(cards);
   const heading=document.createElement('h3');heading.textContent=t().compareMap;host.append(heading);
-  const options=document.createElement('div');options.className='compare-options';
-  for(const [i,r] of valid.entries()){
-   const label=document.createElement('label');label.className='compare-option';
-   const check=document.createElement('input');check.type='checkbox';check.checked=compareVisible.has(r.Datei);check.setAttribute('aria-label',t().compareShow+' '+r.Datei);
-   check.addEventListener('change',()=>{if(check.checked)compareVisible.add(r.Datei);else compareVisible.delete(r.Datei);if(!compareVisible.size){compareVisible.add(r.Datei);check.checked=true}renderComparison()});
-   const dot=document.createElement('span');dot.className='compare-dot';dot.style.background=COMPARISON_COLORS[i%COMPARISON_COLORS.length];
-   const name=document.createElement('span');name.textContent=r.Datei;label.append(check,dot,name);options.append(label);
-  }host.append(options);
   const focus=document.createElement('select');focus.className='compare-select';focus.setAttribute('aria-label',t().compareFocus);
   let opt=document.createElement('option');opt.value='';opt.textContent=t().compareAll;focus.append(opt);
-  for(const r of valid){opt=document.createElement('option');opt.value=r.Datei;opt.textContent=r.Datei;focus.append(opt)}
+  for(const [rank,r] of sorted.entries()){
+   opt=document.createElement('option');opt.value=r.Datei;
+   const colorIndex=valid.indexOf(r)%COMPARISON_COLORS.length;
+   const symbols=['🔵','🟠','🟢','🟣','🔴','🟡','🟤'];
+   opt.textContent=symbols[colorIndex%symbols.length]+' #'+(rank+1)+' · '+r.Datei;focus.append(opt)
+  }
   focus.value=compareHighlight||'';focus.addEventListener('change',()=>{compareHighlight=focus.value||null;renderComparison()});host.append(focus);
   const legend=document.createElement('div');legend.className='compare-map-legend';legend.setAttribute('aria-label',t().compareRank);
-  sorted.forEach((r,rank)=>{const item=document.createElement('div');item.className='compare-legend-item';if(!compareVisible.has(r.Datei))item.classList.add('is-hidden');
+  const toggleVisibility=(r)=>{if(compareVisible.has(r.Datei)){if(compareVisible.size===1)return;compareVisible.delete(r.Datei)}else compareVisible.add(r.Datei);renderComparison()};
+  const makeLegendRow=(r,rank)=>{
+   const item=document.createElement('button');item.type='button';item.className='compare-legend-item';
+   const shown=compareVisible.has(r.Datei);if(!shown)item.classList.add('is-hidden');
+   item.setAttribute('aria-pressed',String(shown));item.setAttribute('aria-label',(shown?t().compareShow+': ':t().compareShow+': ')+r.Datei);
+   item.title=r.Datei;
    const dot=document.createElement('span');dot.className='compare-dot';dot.style.background=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];
-   const label=document.createElement('strong');label.textContent='#'+(rank+1);item.title=r.Datei;item.append(dot,label);legend.append(item)});
+   const label=document.createElement('strong');label.textContent='#'+(rank+1);
+   const eye=document.createElement('span');eye.className='compare-legend-eye';eye.textContent=shown?'◉':'○';
+   item.append(dot,label,eye);item.addEventListener('click',()=>toggleVisibility(r));return item
+  };
+  const desktopLegend=document.createElement('div');desktopLegend.className='compare-legend-desktop';
+  sorted.forEach((r,rank)=>desktopLegend.append(makeLegendRow(r,rank)));legend.append(desktopLegend);
+  const mobileButton=document.createElement('button');mobileButton.type='button';mobileButton.className='compare-legend-mobile-trigger';mobileButton.textContent='☷  '+t().compareRank+' ▾';mobileButton.setAttribute('aria-expanded','false');
+  const mobilePanel=document.createElement('div');mobilePanel.className='compare-legend-mobile-panel';mobilePanel.hidden=true;
+  sorted.forEach((r,rank)=>mobilePanel.append(makeLegendRow(r,rank)));
+  mobileButton.addEventListener('click',()=>{mobilePanel.hidden=!mobilePanel.hidden;mobileButton.setAttribute('aria-expanded',String(!mobilePanel.hidden))});
+  legend.append(mobileButton,mobilePanel);
   const visible=valid.filter(r=>compareVisible.has(r.Datei));
   if(visible.length){
-   if(osmEnabled){const map=createOsmMap(visible[0],language,{routes:valid,visible:compareVisible,highlight:compareHighlight});activeMaps.push(map);map.element.classList.add('compare-map-with-legend');map.element.append(legend);host.append(map.element)}
-   else {const map=renderComparisonOffline(valid,compareVisible,compareHighlight);map.classList.add('compare-map-with-legend');map.append(legend);host.append(map)}
+   if(osmEnabled){const map=createOsmMap(visible[0],language,{routes:valid,drawOrder,visible:compareVisible,highlight:compareHighlight});activeMaps.push(map);map.element.classList.add('compare-map-with-legend');map.element.append(legend);host.append(map.element)}
+   else {const map=renderComparisonOffline(valid,compareVisible,compareHighlight,drawOrder);map.classList.add('compare-map-with-legend');map.append(legend);host.append(map)}
   }
  }
- function renderComparisonOffline(routes,visible,highlight){
+ function renderComparisonOffline(routes,visible,highlight,drawOrder){
   const NS='http://www.w3.org/2000/svg';const node=(tag,attrs={})=>{const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);return e};
   const host=document.createElement('div');host.className='route-map compare-offline-map';
   const shown=routes.filter(r=>visible.has(r.Datei));const coords=shown.flatMap(r=>r._geo);
@@ -266,7 +279,7 @@ if(typeof document!=='undefined'){
   svg.append(node('rect',{width:w,height:h,fill:'#f3f8f3'}));
   for(let x=40;x<w;x+=40)svg.append(node('line',{x1:x,y1:0,x2:x,y2:h,stroke:'#e3eee4','stroke-width':1}));
   for(let y=30;y<h;y+=40)svg.append(node('line',{x1:0,y1:y,x2:w,y2:y,stroke:'#e3eee4','stroke-width':1}));
-  routes.forEach((r,i)=>{if(!visible.has(r.Datei))return;const d=r._geo.map((p,j)=>{const q=point(p);return(j?'L':'M')+q[0].toFixed(2)+' '+q[1].toFixed(2)}).join(' ');
+  drawOrder.forEach(r=>{const i=routes.indexOf(r);if(!visible.has(r.Datei))return;const d=r._geo.map((p,j)=>{const q=point(p);return(j?'L':'M')+q[0].toFixed(2)+' '+q[1].toFixed(2)}).join(' ');
    const selected=highlight===r.Datei;svg.append(node('path',{d,fill:'none',stroke:COMPARISON_COLORS[i%COMPARISON_COLORS.length],'stroke-width':selected?5:3.3,'stroke-opacity':highlight&&!selected?.28:1,'stroke-linejoin':'round','stroke-linecap':'round'}));
   });host.append(svg);return host;
  }
