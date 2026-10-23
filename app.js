@@ -104,6 +104,8 @@ function renderRoute(row){
 
 
 // Native, dependency-free slippy-map renderer. No route coordinates are sent to the tile server.
+// Shared map state must be visible to the OSM renderer as well as the UI.
+let comparisonMapState=null;
 function createOsmMap(row,language,comparison=null){
  const lang=LANG[language], host=document.createElement('div');host.className='osm-map';
  const viewport=document.createElement('div');viewport.className='osm-viewport';viewport.setAttribute('aria-label',lang.osmMap);
@@ -157,7 +159,7 @@ function translateError(message,lang){const t=LANG[lang],parts=String(message).s
 if(typeof module!=='undefined')module.exports={evaluate,facesArea,translateError};
 if(typeof document!=='undefined'){
  const el=id=>document.getElementById(id);
- let language=localStorage.getItem('intvl-language')==='en'?'en':'de',rows=[],busy=false,activeView='gpx',areaUnit='km2',osmEnabled=false,activeMaps=[],compareMetric='efficiency',compareVisible=new Set(),compareHighlight=null,compareOpen=false,compareAreaUnit='km2',comparisonMapState=null,comparisonMapInstance=null;
+ let language=localStorage.getItem('intvl-language')==='en'?'en':'de',rows=[],busy=false,activeView='gpx',areaUnit='km2',osmEnabled=false,activeMaps=[],compareMetric='efficiency',compareVisible=new Set(),compareHighlight=null,compareOpen=false,compareAreaUnit='km2',comparisonMapInstance=null;
  function setAreaUnit(unit){
   if(unit!=='km2'&&unit!=='m2')return;
   areaUnit=unit;
