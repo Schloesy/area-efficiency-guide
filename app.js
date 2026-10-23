@@ -262,15 +262,17 @@ if(typeof document!=='undefined'){
   };
   const desktopLegend=document.createElement('div');desktopLegend.className='compare-legend-desktop';
   sorted.forEach((r,rank)=>desktopLegend.append(makeLegendRow(r,rank)));legend.append(desktopLegend);
-  const mobileButton=document.createElement('button');mobileButton.type='button';mobileButton.className='compare-legend-mobile-trigger';mobileButton.innerHTML='';const mobileTitle=document.createElement('span');mobileTitle.className='compare-legend-title';mobileTitle.textContent=t().compareRank+'  ⌄';mobileButton.append(mobileTitle);const mobileRanks=document.createElement('span');mobileRanks.className='compare-legend-summary';sorted.forEach((r,i)=>{const d=document.createElement('span');d.className='compare-legend-mini';if(!compareVisible.has(r.Datei))d.classList.add('is-hidden');const dot=document.createElement('span');dot.className='compare-dot';dot.style.background=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];const n=document.createElement('b');n.textContent='#'+(i+1);d.append(dot,n);mobileRanks.append(d)});mobileButton.append(mobileRanks);mobileButton.setAttribute('aria-expanded','false');
+  const mobileButton=document.createElement('button');mobileButton.type='button';mobileButton.className='compare-legend-mobile-trigger';mobileButton.innerHTML='';const mobileTitle=document.createElement('span');mobileTitle.className='compare-legend-title';mobileTitle.textContent='⌄';const mobileRanks=document.createElement('span');mobileRanks.className='compare-legend-summary';sorted.forEach((r,i)=>{const d=document.createElement('span');d.className='compare-legend-mini';if(!compareVisible.has(r.Datei))d.classList.add('is-hidden');const dot=document.createElement('span');dot.className='compare-dot';dot.style.background=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];const n=document.createElement('b');n.textContent='#'+(i+1);d.append(dot,n);mobileRanks.append(d)});mobileButton.append(mobileRanks,mobileTitle);mobileButton.setAttribute('aria-label',t().compareRank+' – '+t().compareShow);mobileButton.setAttribute('aria-expanded','false');
   const mobilePanel=document.createElement('div');mobilePanel.className='compare-legend-mobile-panel';mobilePanel.hidden=true;
   sorted.forEach((r,rank)=>mobilePanel.append(makeLegendRow(r,rank)));
   mobileButton.addEventListener('click',()=>{mobilePanel.hidden=!mobilePanel.hidden;mobileButton.setAttribute('aria-expanded',String(!mobilePanel.hidden))});
   legend.append(mobileButton,mobilePanel);
+  // A tap outside the mobile visibility menu closes it without moving the map.
+  const closeMobilePanel=e=>{if(!mobilePanel.hidden&&!legend.contains(e.target)){mobilePanel.hidden=true;mobileButton.setAttribute('aria-expanded','false')}};
   const visible=valid.filter(r=>compareVisible.has(r.Datei));
   if(visible.length){
-   if(osmEnabled){const map=createOsmMap(visible[0],language,{routes:valid,drawOrder,visible:compareVisible,highlight:compareHighlight});comparisonMapInstance=map;activeMaps.push(map);map.element.classList.add('compare-map-with-legend');map.element.append(legend);host.append(map.element)}
-   else {const map=renderComparisonOffline(valid,compareVisible,compareHighlight,drawOrder);comparisonMapInstance=map._mapController;map.classList.add('compare-map-with-legend');map.append(legend);host.append(map)}
+   if(osmEnabled){const map=createOsmMap(visible[0],language,{routes:valid,drawOrder,visible:compareVisible,highlight:compareHighlight});comparisonMapInstance=map;activeMaps.push(map);map.element.classList.add('compare-map-with-legend');map.element.append(legend);map.element.addEventListener('pointerdown',closeMobilePanel,true);host.append(map.element)}
+   else {const map=renderComparisonOffline(valid,compareVisible,compareHighlight,drawOrder);comparisonMapInstance=map._mapController;map.classList.add('compare-map-with-legend');map.append(legend);map.addEventListener('pointerdown',closeMobilePanel,true);host.append(map)}
   }
  }
  function renderComparisonOffline(routes,visible,highlight,drawOrder){
