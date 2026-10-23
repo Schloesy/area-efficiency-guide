@@ -223,18 +223,11 @@ if(typeof document!=='undefined'){
   const cards=document.createElement('div');cards.className='compare-cards';
   for(const [rank,r] of sorted.entries()){
    const card=document.createElement('article');card.className='compare-card';card.style.borderLeftColor=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];
-   const details=document.createElement('details');details.className='compare-card-details';
-   const summary=document.createElement('summary');summary.className='compare-card-summary';summary.setAttribute('aria-label',t().compareDetails+' '+r.Datei);
-   const name=document.createElement('strong');name.className='compare-card-name';name.textContent='#'+(rank+1)+' · '+r.Datei;summary.append(name);
-   const hint=document.createElement('span');hint.className='compare-card-hint';hint.textContent=t().compareDetails+' ▾';summary.append(hint);
+   const name=document.createElement('strong');name.className='compare-card-name';name.textContent='#'+(rank+1)+' · '+r.Datei;card.append(name);
    const metrics=document.createElement('div');metrics.className='compare-card-metrics';
    for(const [label,value] of [[t().distance,fmt(r.Strecke_km,2)+' km'],[t().area,areaText(r)],[t().compareEfficiency,fmt(r.Kreis_Effizienz_Prozent,2)+' %']]){
     const item=document.createElement('div'),caption=document.createElement('span'),number=document.createElement('strong');caption.textContent=label;number.textContent=value;item.append(caption,number);metrics.append(item)
-   }summary.append(metrics);details.append(summary);
-   const expanded=document.createElement('div');expanded.className='compare-card-expanded';
-   for(const [label,value] of [[t().compareFullName,r.Datei],[t().distance,fmt(r.Strecke_km,2)+' km'],[t().area,areaText(r)],[t().compareEfficiency,fmt(r.Kreis_Effizienz_Prozent,2)+' %'],[t().compareSquareValue,fmt(r.Quadrat_Effizienz_Prozent,2)+' %'],[t().compareFacesValue,String(r.Teilflaechen)]]){
-    const line=document.createElement('div'),key=document.createElement('span'),val=document.createElement('strong');key.textContent=label;val.textContent=value;line.append(key,val);expanded.append(line)
-   }details.append(expanded);card.append(details);cards.append(card);
+   }card.append(metrics);cards.append(card);
   }host.append(cards);
   const heading=document.createElement('h3');heading.textContent=t().compareMap;host.append(heading);
   const options=document.createElement('div');options.className='compare-options';
