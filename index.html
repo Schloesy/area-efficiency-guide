@@ -6,7 +6,7 @@
 .file-picker{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:2px dashed #a2c0b2;border-radius:14px;background:#f7faf7;padding:13px}.file-picker-button{display:inline-block;background:#e3ede6;color:#215a47;padding:12px 16px;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer}.file-picker-button:hover{background:#d2e6d8}.file-picker:focus-within{outline:3px solid #4a8cd2;outline-offset:2px}.file-input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip-path:inset(50%)}#selectedFiles{overflow-wrap:anywhere;flex:1;min-width:130px} 
 .osm-map{position:relative;height:390px;background:#e5e9e2;overflow:hidden}.osm-viewport{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:grab}.osm-viewport:active{cursor:grabbing}.osm-tiles{position:absolute;inset:0}.osm-tiles img{position:absolute;width:256px;height:256px;max-width:none;user-select:none;pointer-events:none}.osm-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.osm-controls{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:5px;z-index:2}.osm-control{margin:0;background:#fff;color:#215a47;padding:8px 11px;border:1px solid #adc7b6;box-shadow:0 1px 4px #0002;max-width:145px;min-width:36px;min-height:36px;padding:5px 8px;font-size:22px;line-height:1}.osm-attribution{position:absolute;bottom:0;right:0;background:#ffffffe8;padding:3px 7px;font-size:11px}.osm-attribution a{color:#176c51}#osmToggle[aria-pressed=true]{background:#176c51;color:white}
 
-/* 1.0.5: theme only; GPX computation and map interactions unchanged. */
+/* 1.0.5.1: theme only; GPX computation and map interactions unchanged. */
 #themeMode{border:1px solid #a2c0b2;border-radius:9px;padding:7px 8px;background:#fff;color:#18342f;font:inherit;max-width:110px}
 @media(max-width:380px){.language-row{gap:6px}#themeLabel{display:none}}
 :root[data-theme="dark"]{color-scheme:dark;background:#111b1a;color:#e4f1e9}
@@ -34,7 +34,7 @@
 :root[data-theme="dark"] .osm-attribution{background:#ffffffe8;color:#18342f}
 :root[data-theme="dark"] .osm-attribution a{color:#176c51}
 
-/* 1.0.5: compact, accessible area-unit switch and narrow-screen overflow protection. */
+/* 1.0.5.1: compact, accessible area-unit switch and narrow-screen overflow protection. */
 .face-header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}.face-header h4{margin:0}.unit-control{display:flex;gap:3px;padding:3px;border-radius:11px;background:#e1eae3;flex-shrink:0}.unit-button{margin:0;padding:6px 10px;min-height:32px;font-size:13px;border-radius:8px;background:transparent;color:#335c4b}.unit-control .unit-button.active{background:#176c51;color:white}.unit-button:focus-visible{outline:3px solid #4a8cd2;outline-offset:1px}.face-table td{overflow-wrap:anywhere}
 :root[data-theme="dark"] .unit-control{background:#2a3b34}:root[data-theme="dark"] .unit-control .unit-button:not(.active){background:transparent;color:#d2e8da}:root[data-theme="dark"] .unit-control .unit-button.active{background:#268466;color:#fff}
 
@@ -43,7 +43,7 @@
 .compare-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:10px 0}.compare-toolbar .compare-select{margin:0}.compare-cards{display:none}.compare-offline-map{margin-top:12px}.comparison{touch-action:pan-y}.compare-option span:last-child{overflow-wrap:anywhere;min-width:0}#compareToggle[aria-expanded=true]{background:#176c51;color:white}:root[data-theme="dark"] #compareToggle[aria-expanded=true]{background:#268466;color:white}
 @media(max-width:600px){.compare-scroll{display:none}.compare-cards{display:grid;gap:10px;margin:12px 0}.compare-card{border:1px solid #d9e8df;border-left:5px solid;border-radius:12px;padding:12px;min-width:0}.compare-card-name{display:block;overflow-wrap:anywhere;font-size:13px;margin-bottom:10px}.compare-card-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.compare-card-metrics>div{min-width:0}.compare-card-metrics span{display:block;font-size:11px;color:#657b70}.compare-card-metrics strong{display:block;font-size:12px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;margin-top:4px}:root[data-theme="dark"] .compare-card{border-top-color:#3a5145;border-right-color:#3a5145;border-bottom-color:#3a5145}:root[data-theme="dark"] .compare-card-metrics span{color:#b5c9bd}}
 
-/* 1.0.5: Keep the application viewport stable while retaining map gestures. */
+/* 1.0.5.1: Keep the application viewport stable while retaining map gestures. */
 html,body{touch-action:pan-x pan-y}
 .compare-map-with-legend{position:relative;overflow:hidden}
 .compare-map-legend{position:absolute;z-index:5;right:8px;top:8px;display:flex;flex-direction:column;gap:5px;max-height:calc(100% - 16px);overflow-y:auto;padding:7px;background:#fffffff0;color:#18342f;border:1px solid #d3e3d7;border-radius:9px;box-shadow:0 2px 8px #0002;pointer-events:none}
@@ -51,10 +51,10 @@ html,body{touch-action:pan-x pan-y}
 .compare-legend-item.is-hidden{opacity:.35}
 .compare-card-name{display:block;overflow-wrap:anywhere;font-size:13px;margin-bottom:10px}
 :root[data-theme="dark"] .compare-map-legend{background:#172520ee;color:#f0f7f1;border-color:#5b806c}
-/* 1.0.5: Match the OSM fit button to the comparison ranking legend. */
+/* 1.0.5.1: Match the OSM fit button to the comparison ranking legend. */
 .osm-control{background:#fffffff0;color:#18342f;border-color:#d3e3d7}
 :root[data-theme="dark"] .osm-map .osm-control{background:#172520ee!important;color:#f0f7f1!important;border-color:#5b806c!important}
-/* 1.0.5: Responsive visibility controls inside the ranking legend. */
+/* 1.0.5.1: Responsive visibility controls inside the ranking legend. */
 .compare-map-legend{pointer-events:auto;min-width:70px;gap:2px}
 .compare-legend-desktop{display:flex;flex-direction:column;gap:2px}
 .compare-legend-item{width:100%;display:flex;justify-content:flex-start;gap:8px;margin:0;padding:7px 9px;border-radius:7px;border:0;background:transparent;color:inherit;font-size:13px;min-height:35px;cursor:pointer}
@@ -71,7 +71,7 @@ html,body{touch-action:pan-x pan-y}
  :root[data-theme="dark"] .compare-legend-mobile-panel:not([hidden]){background:#172520f5;border-color:#5b806c}
 }
 
-/* 1.0.5: compact mobile ranking legend, native desktop selector and custom mobile focus menu. */
+/* 1.0.5.1: compact mobile ranking legend, native desktop selector and custom mobile focus menu. */
 .compare-legend-eye{display:none}
 .compare-offline-map{position:relative;overflow:hidden}
 .compare-offline-svg{display:block;width:100%;height:auto;touch-action:none;cursor:grab;user-select:none}
@@ -102,7 +102,7 @@ html,body{touch-action:pan-x pan-y}
 }
 </style></head><body><main>
 <div class="language-row"><label for="themeMode" id="themeLabel">Design</label><select id="themeMode" aria-label="Farbschema"><option value="system">System</option><option value="light">Hell</option><option value="dark">Dunkel</option></select><span id="langDe">GER</span><label class="switch" aria-label="Language: German or English"><input type="checkbox" id="language" aria-label="English language"><span class="slider"></span></label><span id="langEn">EN</span></div>
-<header><h1>◉ Area Guide</h1><span class="tag">Offline · 1.0.5</span></header>
+<header><h1>◉ Area Guide</h1><span class="tag">Offline · 1.0.5.1</span></header>
 <div id="updateBox" hidden role="status"><strong id="updateTitle">Neue Version verfügbar</strong><p id="updateNote"></p><button id="updateButton">Jetzt aktualisieren</button></div>
 <nav class="view-tabs" aria-label="Calculation mode"><button type="button" id="tabGpx" class="view-tab active" aria-selected="true" aria-controls="viewGpx">GPX-Analyse</button><button type="button" id="tabManual" class="view-tab" aria-selected="false" aria-controls="viewManual">Manuell</button></nav>
 <div id="viewGpx"><section class="card"><h2 id="heading">GPX-Routen auswerten</h2><p id="intro">Wähle GPX-Dateien aus.</p><div class="file-picker"><input id="files" class="file-input" type="file" accept=".gpx,application/gpx+xml" multiple aria-labelledby="filePickerLabel"><label id="filePickerLabel" class="file-picker-button" for="files">Dateien auswählen</label><span id="selectedFiles" class="small" aria-live="polite">Keine Dateien ausgewählt</span></div><div><button id="calc">Routen berechnen</button><button class="secondary" id="export" disabled>CSV speichern</button></div><p id="status" class="small">Bereit.</p></section>
@@ -111,4 +111,4 @@ html,body{touch-action:pan-x pan-y}
 <div class="manual-fields"><label for="manualLength"><span id="manualLengthLabel">Streckenlänge (km)</span><input id="manualLength" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 13,77"></label><label for="manualArea"><span id="manualAreaLabel">Fläche (km²)</span><input id="manualArea" type="text" inputmode="decimal" autocomplete="off" placeholder="z. B. 9,05"></label></div>
 <p id="manualMessage" class="small" aria-live="polite"></p><div id="manualResults" class="stats" aria-live="polite"></div>
 <p id="manualWarning" class="small error" hidden></p></section></div>
-<footer>Area Efficiency Guide for INTVL 1.0.5 · <span id="footerText"></span></footer></main><script src="app.js?v=105"></script></body></html>
+<footer>Area Efficiency Guide for INTVL 1.0.5.1 · <span id="footerText"></span></footer></main><script src="app.js?v=1051"></script></body></html>

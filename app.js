@@ -190,7 +190,7 @@ if(typeof document!=='undefined'){
   if(!busy)el('status').textContent=rows.length?t().processed(rows.length):t().ready;
   el('updateTitle').textContent=t().update;el('updateButton').textContent=t().updateAction;el('updateNote').textContent=t().updateNote;
   for(const m of activeMaps)m.destroy();activeMaps=[];const results=el('results');results.replaceChildren();
-  renderComparison();
+  try{renderComparison()}catch(error){console.error('Comparison map render failed:',error);comparisonMapInstance=null;const host=el('comparison');const notice=document.createElement('p');notice.className='small error';notice.textContent=language==='de'?'Vergleichskarte konnte nicht angezeigt werden. Die Einzelauswertungen bleiben erhalten.':'Comparison map could not be displayed. Individual results remain available.';host.append(notice)}
   for(const row of rows){const div=document.createElement('div');div.className='route';const title=document.createElement('h3');title.textContent=row.Datei;div.append(title);
    if(row.Strecke_km!==undefined){try{const mapSlot=document.createElement('div');if(osmEnabled){const m=createOsmMap(row,language);activeMaps.push(m);mapSlot.append(m.element)}else mapSlot.append(renderRoute(row));div.append(mapSlot)}catch(e){const warning=document.createElement('p');warning.className='small error';warning.textContent='Route display: '+e.message;div.append(warning)}const stats=document.createElement('div');stats.className='stats';for(const [label,value] of [[t().distance,fmt(row.Strecke_km,2)+' km'],[t().area,fmt(row.Flaeche_km2,2)+' km²'],[t().circle,fmt(row.Kreis_Effizienz_Prozent,2)+' %'],[t().square,fmt(row.Quadrat_Effizienz_Prozent,2)+' %']]){const box=document.createElement('div'),small=document.createElement('span'),strong=document.createElement('strong');box.className='stat';small.textContent=label;strong.textContent=value;box.append(small,strong);stats.append(box)}div.append(stats);if(row._faceAreas&&row._faceAreas.length)div.append(renderFaceDetails(row,t(),fmt,areaUnit,setAreaUnit))}
    const info=document.createElement('p');info.className=row.Strecke_km===undefined?'small error':'small';info.textContent=row.Strecke_km===undefined?t().error+': '+translateError(row._error,language):(row.Teilflaechen?'OK':t().noFaces)+' · '+t().faces+': '+row.Teilflaechen;div.append(info);results.append(div);
@@ -303,7 +303,7 @@ if(typeof document!=='undefined'){
  function updateFileSelection(){const n=el('files').files.length;el('selectedFiles').textContent=n?t().selectedFiles(n):t().noFiles}
  el('files').addEventListener('change',updateFileSelection);
  el('compareToggle').addEventListener('click',()=>{compareOpen=!compareOpen;render()});
- el('osmToggle').addEventListener('click',()=>{osmEnabled=!osmEnabled;render()});
+ el('osmToggle').addEventListener('click',()=>{osmEnabled=!osmEnabled;comparisonMapState=null;comparisonMapInstance=null;render()});
  const numberInput=value=>{
   const s=String(value).trim().replace(/\s/g,'');
   if(!/^(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(s))return NaN;
