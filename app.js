@@ -106,6 +106,7 @@ function renderRoute(row){
 // Native, dependency-free slippy-map renderer. No route coordinates are sent to the tile server.
 // Shared map state must be visible to the OSM renderer as well as the UI.
 let comparisonMapState=null;
+let comparisonVisibilityMenuOpen=false;
 function createOsmMap(row,language,comparison=null){
  const lang=LANG[language], host=document.createElement('div');host.className='osm-map';
  const viewport=document.createElement('div');viewport.className='osm-viewport';viewport.setAttribute('aria-label',lang.osmMap);
@@ -250,7 +251,7 @@ if(typeof document!=='undefined'){
   for(const [idx,r] of [[-1,null],...sorted.map((r,i)=>[i,r])]){const btn=document.createElement('button');btn.type='button';btn.className='compare-focus-option';if((r?r.Datei:null)===compareHighlight)btn.classList.add('selected');if(r){const dot=document.createElement('span');dot.className='compare-dot';dot.style.background=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];btn.append(dot)}const label=document.createElement('span');label.textContent=r?'#'+(idx+1)+' · '+r.Datei:t().compareAll;btn.append(label);if((r?r.Datei:null)===compareHighlight){const check=document.createElement('strong');check.textContent='✓';btn.append(check)}btn.addEventListener('click',()=>{compareHighlight=r?r.Datei:null;renderComparison()});panel.append(btn)}
   trigger.addEventListener('click',()=>{panel.hidden=!panel.hidden;trigger.setAttribute('aria-expanded',String(!panel.hidden))});custom.append(trigger,panel);host.append(custom);
   const legend=document.createElement('div');legend.className='compare-map-legend';legend.setAttribute('aria-label',t().compareRank);
-  const toggleVisibility=(r)=>{if(compareVisible.has(r.Datei)){if(compareVisible.size===1)return;compareVisible.delete(r.Datei)}else compareVisible.add(r.Datei);renderComparison()};
+  const toggleVisibility=(r)=>{if(compareVisible.has(r.Datei)){if(compareVisible.size===1)return;compareVisible.delete(r.Datei)}else compareVisible.add(r.Datei);comparisonVisibilityMenuOpen=!mobilePanel.hidden;renderComparison()};
   const makeLegendRow=(r,rank)=>{
    const item=document.createElement('button');item.type='button';item.className='compare-legend-item';
    const shown=compareVisible.has(r.Datei);if(!shown)item.classList.add('is-hidden');
@@ -262,13 +263,13 @@ if(typeof document!=='undefined'){
   };
   const desktopLegend=document.createElement('div');desktopLegend.className='compare-legend-desktop';
   sorted.forEach((r,rank)=>desktopLegend.append(makeLegendRow(r,rank)));legend.append(desktopLegend);
-  const mobileButton=document.createElement('button');mobileButton.type='button';mobileButton.className='compare-legend-mobile-trigger';mobileButton.innerHTML='';const mobileTitle=document.createElement('span');mobileTitle.className='compare-legend-title';mobileTitle.textContent='⌄';const mobileRanks=document.createElement('span');mobileRanks.className='compare-legend-summary';sorted.forEach((r,i)=>{const d=document.createElement('span');d.className='compare-legend-mini';if(!compareVisible.has(r.Datei))d.classList.add('is-hidden');const dot=document.createElement('span');dot.className='compare-dot';dot.style.background=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];const n=document.createElement('b');n.textContent='#'+(i+1);d.append(dot,n);mobileRanks.append(d)});mobileButton.append(mobileRanks,mobileTitle);mobileButton.setAttribute('aria-label',t().compareRank+' – '+t().compareShow);mobileButton.setAttribute('aria-expanded','false');
-  const mobilePanel=document.createElement('div');mobilePanel.className='compare-legend-mobile-panel';mobilePanel.hidden=true;
+  const mobileButton=document.createElement('button');mobileButton.type='button';mobileButton.className='compare-legend-mobile-trigger';mobileButton.innerHTML='';const mobileTitle=document.createElement('span');mobileTitle.className='compare-legend-title';mobileTitle.textContent='⌄';const mobileRanks=document.createElement('span');mobileRanks.className='compare-legend-summary';sorted.forEach((r,i)=>{const d=document.createElement('span');d.className='compare-legend-mini';if(!compareVisible.has(r.Datei))d.classList.add('is-hidden');const dot=document.createElement('span');dot.className='compare-dot';dot.style.background=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];const n=document.createElement('b');n.textContent='#'+(i+1);d.append(dot,n);mobileRanks.append(d)});mobileButton.append(mobileRanks,mobileTitle);mobileButton.setAttribute('aria-label',t().compareRank+' – '+t().compareShow);mobileButton.setAttribute('aria-expanded',String(comparisonVisibilityMenuOpen));
+  const mobilePanel=document.createElement('div');mobilePanel.className='compare-legend-mobile-panel';mobilePanel.hidden=!comparisonVisibilityMenuOpen;
   sorted.forEach((r,rank)=>mobilePanel.append(makeLegendRow(r,rank)));
-  mobileButton.addEventListener('click',()=>{mobilePanel.hidden=!mobilePanel.hidden;mobileButton.setAttribute('aria-expanded',String(!mobilePanel.hidden))});
+  mobileButton.addEventListener('click',()=>{comparisonVisibilityMenuOpen=mobilePanel.hidden;mobilePanel.hidden=!comparisonVisibilityMenuOpen;mobileButton.setAttribute('aria-expanded',String(comparisonVisibilityMenuOpen))});
   legend.append(mobileButton,mobilePanel);
   // A tap outside the mobile visibility menu closes it without moving the map.
-  const closeMobilePanel=e=>{if(!mobilePanel.hidden&&!legend.contains(e.target)){mobilePanel.hidden=true;mobileButton.setAttribute('aria-expanded','false')}};
+  const closeMobilePanel=e=>{if(!mobilePanel.hidden&&!legend.contains(e.target)){mobilePanel.hidden=true;comparisonVisibilityMenuOpen=false;mobileButton.setAttribute('aria-expanded','false')}};
   const visible=valid.filter(r=>compareVisible.has(r.Datei));
   if(visible.length){
    if(osmEnabled){const map=createOsmMap(visible[0],language,{routes:valid,drawOrder,visible:compareVisible,highlight:compareHighlight});comparisonMapInstance=map;activeMaps.push(map);map.element.classList.add('compare-map-with-legend');map.element.append(legend);map.element.addEventListener('pointerdown',closeMobilePanel,true);host.append(map.element)}
@@ -285,9 +286,7 @@ if(typeof document!=='undefined'){
   const x0=(w-(maxx-minx)*scale)/2,y0=(h-(maxy-miny)*scale)/2;
   const point=p=>{const q=project(p);return [x0+(q[0]-minx)*scale,h-y0-(q[1]-miny)*scale]};
   const svg=node('svg',{viewBox:`0 0 ${w} ${h}`,role:'img','aria-label':t().compareMap});svg.classList.add('compare-offline-svg');
-  svg.append(node('rect',{width:w,height:h,fill:'#f3f8f3'}));
-  for(let x=40;x<w;x+=40)svg.append(node('line',{x1:x,y1:0,x2:x,y2:h,stroke:'#e3eee4','stroke-width':1}));
-  for(let y=30;y<h;y+=40)svg.append(node('line',{x1:0,y1:y,x2:w,y2:y,stroke:'#e3eee4','stroke-width':1}));
+  // The grid is drawn across the full viewport by CSS; SVG remains transparent to avoid letterbox bands.
   drawOrder.forEach(r=>{const i=routes.indexOf(r);if(!visible.has(r.Datei))return;const d=r._geo.map((p,j)=>{const q=point(p);return(j?'L':'M')+q[0].toFixed(2)+' '+q[1].toFixed(2)}).join(' ');
    const selected=highlight===r.Datei;svg.append(node('path',{d,fill:'none',stroke:COMPARISON_COLORS[i%COMPARISON_COLORS.length],'stroke-width':selected?5:3.3,'stroke-opacity':highlight&&!selected?.28:1,'stroke-linejoin':'round','stroke-linecap':'round'}));
   });
@@ -369,7 +368,7 @@ if(typeof document!=='undefined'){
  el('calc').onclick=async()=>{
   const files=Array.from(el('files').files);
   if(!files.length){el('status').textContent=t().select;return}
-  rows=[];compareVisible=new Set();compareHighlight=null;compareOpen=false;comparisonMapState=null;comparisonMapInstance=null;busy=true;el('calc').disabled=true;el('export').disabled=true;
+  rows=[];compareVisible=new Set();compareHighlight=null;compareOpen=false;comparisonVisibilityMenuOpen=false;comparisonMapState=null;comparisonMapInstance=null;busy=true;el('calc').disabled=true;el('export').disabled=true;
   el('results').replaceChildren();
   el('status').textContent=language==='de'?'Berechnung läuft …':'Calculating …';
   try{
