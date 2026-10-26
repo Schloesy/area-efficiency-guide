@@ -1,1 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="42" fill="#123b35"/><path d="M42 112C60 45 112 30 147 80S110 153 62 139Z" fill="none" stroke="#9de0b5" stroke-width="12" stroke-linejoin="round"/><circle cx="42" cy="112" r="12" fill="#fff"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1248" height="1248" viewBox="0 0 1248 1248" role="img" aria-label="INTVL area efficiency app icon">
+<defs><clipPath id="rounded"><rect width="1248" height="1248" rx="265"/></clipPath></defs>
+<g clip-path="url(#rounded)">
+<rect width="1248" height="1248" fill="#073b34"/>
+<!-- Reference circle -->
+<circle cx="621" cy="602" r="426" fill="none" stroke="#ffffff" stroke-width="11"/>
+<!-- Organic route contour -->
+<path d="M 131,520 C 169,493 249,503 288,459 C 327,415 288,372 329,350 C 360,330 404,334 452,299 C 510,257 524,281 556,282 C 623,285 607,211 642,143 C 668,90 704,88 733,123 C 770,173 820,142 842,208 C 858,257 846,320 889,358 C 925,391 1037,393 1082,435 C 1135,482 1100,549 1081,588 C 1057,638 1144,697 1117,764 C 1098,814 1029,813 1006,856 C 980,906 967,956 902,965 C 840,975 796,939 743,974 C 695,1003 679,1063 622,1073 C 551,1086 515,1012 479,942 C 449,882 411,859 358,865 C 291,872 268,852 267,788 C 268,741 270,689 237,654 C 207,623 130,615 126,570 C 124,550 125,531 131,520 Z" fill="none" stroke="#a5e9bc" stroke-width="29" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- Percent sign -->
+<circle cx="446" cy="503" r="72" fill="#ffffff"/>
+<circle cx="446" cy="503" r="30" fill="#073b34"/>
+<path d="M 616,434 H 674 L 451,730 H 393 Z" fill="#ffffff"/>
+<circle cx="619" cy="659" r="72" fill="#ffffff"/>
+<circle cx="619" cy="659" r="30" fill="#073b34"/>
+<!-- Upward arrow, matched to slim percent stroke -->
+<path d="M 506,849 C 656,825 779,758 850,566" fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round"/>
+<path d="M 806,552 L 879,475 L 894,580 Z" fill="#ffffff"/>
+</g>
+</svg>
