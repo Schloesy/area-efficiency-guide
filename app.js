@@ -357,7 +357,7 @@ if(typeof document!=='undefined'){
   if(area<0){msg.textContent=t().manualAreaInvalid;el('manualArea').setAttribute('aria-invalid','true');return}
   msg.textContent='';
   const circle=length*length/(4*Math.PI),square=length*length/16;
-  for(const [label,value] of [[t().manualCircleIdeal,fmt(circle,2)+' km²'],[t().manualSquareIdeal,fmt(square,2)+' km²'],[t().circle,fmt(area/circle*100,2)+' %'],[t().square,fmt(area/square*100,2)+' %']]){
+  for(const [label,value] of [[t().circle,fmt(area/circle*100,2)+' %'],[t().square,fmt(area/square*100,2)+' %']]){
    const box=document.createElement('div'),small=document.createElement('span'),strong=document.createElement('strong');
    box.className='stat';small.textContent=label;strong.textContent=value;box.append(small,strong);if(label===t().circle||label===t().square){const max=document.createElement('span');max.textContent=t().maxArea+fmt(label===t().circle?circle:square,2)+' km²';box.append(max)}result.append(box);
   }

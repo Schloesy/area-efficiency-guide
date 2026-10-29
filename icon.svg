@@ -1,19 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1248" height="1248" viewBox="0 0 1248 1248" role="img" aria-label="INTVL area efficiency app icon">
-<defs><clipPath id="rounded"><rect width="1248" height="1248" rx="265"/></clipPath></defs>
-<g clip-path="url(#rounded)">
-<rect width="1248" height="1248" fill="#073b34"/>
-<!-- Reference circle -->
-<circle cx="621" cy="602" r="426" fill="none" stroke="#ffffff" stroke-width="11"/>
-<!-- Organic route contour -->
-<path d="M 131,520 C 169,493 249,503 288,459 C 327,415 288,372 329,350 C 360,330 404,334 452,299 C 510,257 524,281 556,282 C 623,285 607,211 642,143 C 668,90 704,88 733,123 C 770,173 820,142 842,208 C 858,257 846,320 889,358 C 925,391 1037,393 1082,435 C 1135,482 1100,549 1081,588 C 1057,638 1144,697 1117,764 C 1098,814 1029,813 1006,856 C 980,906 967,956 902,965 C 840,975 796,939 743,974 C 695,1003 679,1063 622,1073 C 551,1086 515,1012 479,942 C 449,882 411,859 358,865 C 291,872 268,852 267,788 C 268,741 270,689 237,654 C 207,623 130,615 126,570 C 124,550 125,531 131,520 Z" fill="none" stroke="#a5e9bc" stroke-width="29" stroke-linecap="round" stroke-linejoin="round"/>
-<!-- Percent sign -->
-<circle cx="446" cy="503" r="72" fill="#ffffff"/>
-<circle cx="446" cy="503" r="30" fill="#073b34"/>
-<path d="M 616,434 H 674 L 451,730 H 393 Z" fill="#ffffff"/>
-<circle cx="619" cy="659" r="72" fill="#ffffff"/>
-<circle cx="619" cy="659" r="30" fill="#073b34"/>
-<!-- Upward arrow, matched to slim percent stroke -->
-<path d="M 506,849 C 656,825 779,758 850,566" fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round"/>
-<path d="M 806,552 L 879,475 L 894,580 Z" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1254" height="1254" viewBox="0 0 1254 1254" role="img" aria-label="Area Efficiency Guide INTVL app icon revision 02">
+<defs>
+ <radialGradient id="bg" cx="49%" cy="43%" r="78%"><stop offset="0" stop-color="#004c43"/><stop offset="1" stop-color="#003d36"/></radialGradient>
+ <clipPath id="corners"><rect width="1254" height="1254" rx="265"/></clipPath>
+</defs>
+<g clip-path="url(#corners)">
+<rect width="1254" height="1254" fill="url(#bg)"/>
+<circle cx="624" cy="603" r="426" fill="none" stroke="#fff" stroke-width="11"/>
+<path d="M 132,522 C 171,494 250,504 290,461 C 329,417 290,373 331,351 C 362,331 406,335 454,300 C 512,258 526,282 558,283 C 625,286 609,212 644,144 C 670,91 706,89 735,124 C 772,174 822,143 844,209 C 860,258 848,321 891,359 C 927,392 1039,394 1084,436 C 1137,483 1102,550 1083,589 C 1059,639 1146,698 1119,765 C 1100,815 1031,814 1008,857 C 982,907 969,957 904,966 C 842,976 798,940 745,975 C 697,1004 681,1064 624,1074 C 553,1087 517,1013 481,943 C 451,883 413,860 360,866 C 293,873 270,853 269,789 C 270,742 272,690 239,655 C 209,624 132,616 128,571 C 126,551 126,532 132,522 Z" fill="none" stroke="#9cf3c4" stroke-width="29" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- Centered percentage sign -->
+<circle cx="489" cy="509" r="77" fill="#fff"/><circle cx="489" cy="509" r="32" fill="url(#bg)"/>
+<path d="M 673,439 H 730 L 477,760 H 418 Z" fill="#fff"/>
+<circle cx="662" cy="687" r="77" fill="#fff"/><circle cx="662" cy="687" r="32" fill="url(#bg)"/>
+<!-- Upward arrow: shaft and symmetrical tip -->
+<path d="M 507,851 C 668,858 808,767 822,559" fill="none" stroke="#fff" stroke-width="37" stroke-linecap="round"/>
+<path d="M 752,563 L 841,468 L 892,596 Z" fill="#fff"/>
 </g>
 </svg>
