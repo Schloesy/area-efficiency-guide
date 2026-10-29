@@ -139,7 +139,7 @@ function createOsmMap(row,language,comparison=null){
  const color=COMPARISON_COLORS[i%COMPARISON_COLORS.length],selected=comparison.highlight===r.Datei;
  overlay.append(node('path',{d:path,fill:'none',stroke:'#fff','stroke-width':selected?7:5,'stroke-opacity':selected?1:.65,'stroke-linejoin':'round','stroke-linecap':'round'}));
  overlay.append(node('path',{d:path,fill:'none',stroke:color,'stroke-width':selected?4.5:2.8,'stroke-opacity':comparison.highlight&&!selected?.35:1,'stroke-linejoin':'round','stroke-linecap':'round'}));
- if(r._closureMeters){const a=xy[xy.length-1],b=xy[0];overlay.append(node('path',{d:`M${a[0].toFixed(2)} ${a[1].toFixed(2)} L${b[0].toFixed(2)} ${b[1].toFixed(2)}`,fill:'none',stroke:'#df8a25','stroke-width':selected?3.5:2.5,'stroke-dasharray':'7 5'}));}
+ if(r._closureMeters){const a=xy[xy.length-1],b=xy[0];overlay.append(node('path',{d:`M${a[0].toFixed(2)} ${a[1].toFixed(2)} L${b[0].toFixed(2)} ${b[1].toFixed(2)}`,fill:'none',stroke:color,'stroke-width':selected?3.5:2.5,'stroke-opacity':comparison.highlight&&!selected?.35:1,'stroke-dasharray':'7 5'}));}
  }}else{overlay.append(node('path',{d:d(row._xy.slice(0,-1)),fill:'none',stroke:'#fff','stroke-width':5.5,'stroke-linejoin':'round','stroke-linecap':'round'}));overlay.append(node('path',{d:d(row._xy.slice(0,-1)),fill:'none',stroke:'#176c51','stroke-width':3.3,'stroke-linejoin':'round','stroke-linecap':'round'}));if(row._closureMeters)overlay.append(node('path',{d:d([row._xy[row._xy.length-2],row._xy[0]]),fill:'none',stroke:'#df8a25','stroke-width':3,'stroke-dasharray':'7 5'}));const [sx,sy]=pt(row._xy[0]);overlay.append(node('circle',{cx:sx,cy:sy,r:6,fill:'#fff',stroke:'#176c51','stroke-width':3}));}
  }
  function zoomAt(next,x,y){const old=scale(),[w,h]=size();const anchor=[cx+(x-w/2)/old,cy+(y-h/2)/old];zoom=Math.max(MIN,Math.min(MAX,next));const s=scale();cx=anchor[0]-(x-w/2)/s;cy=anchor[1]-(y-h/2)/s;clamp();draw()}
@@ -307,7 +307,9 @@ if(typeof document!=='undefined'){
   defs.append(pattern);gridSvg.append(defs);
   gridSvg.append(node('rect',{x:-100000,y:-100000,width:200000,height:200000,fill:'url(#comparison-moving-grid)'}));
   drawOrder.forEach(r=>{const i=routes.indexOf(r);if(!visible.has(r.Datei))return;const d=r._geo.map((p,j)=>{const q=point(p);return(j?'L':'M')+q[0].toFixed(2)+' '+q[1].toFixed(2)}).join(' ');
-   const selected=highlight===r.Datei;svg.append(node('path',{d,fill:'none',stroke:COMPARISON_COLORS[i%COMPARISON_COLORS.length],'stroke-width':selected?5:3.3,'stroke-opacity':highlight&&!selected?.28:1,'stroke-linejoin':'round','stroke-linecap':'round'}));
+   const selected=highlight===r.Datei,color=COMPARISON_COLORS[i%COMPARISON_COLORS.length],opacity=highlight&&!selected?.28:1;
+   svg.append(node('path',{d,fill:'none',stroke:color,'stroke-width':selected?5:3.3,'stroke-opacity':opacity,'stroke-linejoin':'round','stroke-linecap':'round'}));
+   if(r._closureMeters){const a=point(r._geo[r._geo.length-1]),b=point(r._geo[0]);svg.append(node('path',{d:`M${a[0].toFixed(2)} ${a[1].toFixed(2)} L${b[0].toFixed(2)} ${b[1].toFixed(2)}`,fill:'none',stroke:color,'stroke-width':selected?4:3,'stroke-opacity':opacity,'stroke-dasharray':'7 5','stroke-linecap':'round'}));}
   });
   // Use one aspect-correct viewport for BOTH SVG layers. A fixed 640x390
   // viewBox letterboxes the route on portrait phones while the grid stretches;
