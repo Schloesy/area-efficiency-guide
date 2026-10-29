@@ -428,8 +428,8 @@ if(typeof document!=='undefined'){
  }
  el('language').addEventListener('change',e=>{language=e.target.checked?'en':'de';localStorage.setItem('intvl-language',language);render()});
  let geometryWorker=null,workerId=0;const pending=new Map();
- try{geometryWorker=new Worker('./geometry-worker.js?v=1080');geometryWorker.onmessage=e=>{const {id,result,error}=e.data;const p=pending.get(id);if(!p)return;pending.delete(id);error?p.reject(Error(error)):p.resolve(result)};geometryWorker.onerror=()=>{geometryWorker.terminate();geometryWorker=null;for(const p of pending.values())p.reject(Error('Geometry worker failed'));pending.clear()}}catch(e){geometryWorker=null}
- const evaluateAsync=(name,xml)=>geometryWorker?new Promise((resolve,reject)=>{const id=++workerId;pending.set(id,{resolve,reject});geometryWorker.postMessage({id,name,xml})}):Promise.resolve().then(()=>evaluate(name,xml));
+ try{geometryWorker=new Worker('./geometry-worker.js?v=1081');geometryWorker.onmessage=e=>{const {id,result,error}=e.data;const p=pending.get(id);if(!p)return;pending.delete(id);error?p.reject(Error(error)):p.resolve(result)};geometryWorker.onerror=()=>{geometryWorker.terminate();geometryWorker=null;for(const p of pending.values())p.reject(Error('Geometry worker failed'));pending.clear()}}catch(e){geometryWorker=null}
+ const evaluateAsync=(name,xml)=>geometryWorker?new Promise((resolve,reject)=>{const id=++workerId;pending.set(id,{resolve,reject});geometryWorker.postMessage({id,name,segments:readGpx(xml)})}):Promise.resolve().then(()=>evaluate(name,xml));
  el('calc').onclick=async()=>{
   const files=Array.from(el('files').files);
   if(!files.length){el('status').textContent=t().select;return}
