@@ -116,7 +116,7 @@ function createOsmMap(row,language,comparison=null){
  const controls=document.createElement('div');controls.className='osm-controls';
  const addButton=(label,action)=>{const b=document.createElement('button');b.type='button';b.className='osm-control';b.textContent=label;b.title=label;b.setAttribute('aria-label',label);b.addEventListener('click',action);controls.append(b);return b};
  const attribution=document.createElement('div');attribution.className='osm-attribution';
- const osmLink=document.createElement('a');osmLink.href='https://www.openstreetmap.org/copyright';osmLink.target='_blank';osmLink.rel='noopener noreferrer';osmLink.textContent='© OpenStreetMap contributors';attribution.append(osmLink);host.append(controls,attribution);
+ const osmLink=document.createElement('a');osmLink.href='https://www.openstreetmap.org/copyright';osmLink.target='_blank';osmLink.rel='noopener noreferrer';osmLink.textContent='© OpenStreetMap';attribution.append(osmLink);host.append(controls,attribution);
  const TILE=256,MAX=19,MIN=2;
  const merc=([lon,lat])=>{const y=Math.max(-85.05112878,Math.min(85.05112878,lat))*Math.PI/180;return [(lon+180)/360,(1-Math.log(Math.tan(y)+1/Math.cos(y))/Math.PI)/2]};
  const geo=row._geo, coords=(comparison?comparison.routes.filter(r=>comparison.visible.has(r.Datei)).flatMap(r=>r._geo):geo).map(merc);let zoom=12,cx=0,cy=0,dead=false,request=0;
