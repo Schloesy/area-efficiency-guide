@@ -159,24 +159,26 @@ function createOsmMap(row,language,comparison=null){
  const routePoints=new Map();if(comparison){for(const r of comparison.routes)routePoints.set(r,r._geo.map(merc))}else routePoints.set(row,row._geo.map(merc));
  const ringPoints=!comparison?row._rings.map(r=>r.map(p=>merc(inverse(p)))):[];
  const ringLabels=!comparison?row._rings.map(r=>merc(inverse(interiorLabelPoint(r)))):[];
- const fmt=v=>v.toFixed(9);const path=points=>points.map((p,i)=>(i?'L':'M')+fmt(p[0])+' '+fmt(p[1])).join(' ');
+ // Use route-local SVG coordinates to avoid subpixel jitter at high OSM zoom levels.
+ const [originX,originY]=coords[0]||[0,0];
+ const fmt=v=>v.toFixed(12);const path=points=>points.map((p,i)=>(i?'L':'M')+fmt(p[0]-originX)+' '+fmt(p[1]-originY)).join(' ');
  function routeGeometry(r){const key=(comparison?comparison.routes.indexOf(r):0)+'/'+zoom;if(geometryCache.has(key))return geometryCache.get(key);
   const pts=routePoints.get(r),reduced=simplify(pts,0.65/scale()),value=path(reduced);geometryCache.set(key,value);return value;}
  function paintGeometry(){if(dead||drawnZoom===zoom)return;drawnZoom=zoom;overlay.replaceChildren();markers.length=0;
   const addPath=(d,attrs)=>overlay.append(node('path',{d,fill:'none','vector-effect':'non-scaling-stroke',...attrs}));
   if(!comparison)for(let i=0;i<ringPoints.length;i++){const ring=ringPoints[i],reduced=simplify(ring,0.5/scale());overlay.append(node('path',{d:path(reduced)+' Z',fill:i%2?'#8fc9e4':'#82cfa0','fill-opacity':'.34',stroke:'none'}));
-   const [x,y]=ringLabels[i],circle=node('circle',{cx:x,cy:y,fill:'#fff','fill-opacity':'.9',stroke:'#176c51','stroke-width':1.5,'vector-effect':'non-scaling-stroke'}),text=node('text',{x,y,'text-anchor':'middle','font-weight':700,fill:'#176c51'});text.textContent=faceLabel(i);overlay.append(circle,text);markers.push({circle,text,y,r:12});}
+   const [absoluteX,absoluteY]=ringLabels[i],x=absoluteX-originX,y=absoluteY-originY,circle=node('circle',{cx:x,cy:y,fill:'#fff','fill-opacity':'.9',stroke:'#176c51','stroke-width':1.5,'vector-effect':'non-scaling-stroke'}),text=node('text',{x,y,'text-anchor':'middle','font-weight':700,fill:'#176c51'});text.textContent=faceLabel(i);overlay.append(circle,text);markers.push({circle,text,y,r:12});}
   if(comparison){for(const r of comparison.drawOrder){if(!comparison.visible.has(r.Datei))continue;const i=comparison.routes.indexOf(r),color=COMPARISON_COLORS[i%COMPARISON_COLORS.length],selected=comparison.highlight===r.Datei,d=routeGeometry(r);
    addPath(d,{stroke:'#fff','stroke-width':selected?7:5,'stroke-opacity':selected?1:.65,'stroke-linejoin':'round','stroke-linecap':'round'});
    addPath(d,{stroke:color,'stroke-width':selected?4.5:2.8,'stroke-opacity':comparison.highlight&&!selected?.35:1,'stroke-linejoin':'round','stroke-linecap':'round'});
    if(r._closureMeters){const pts=routePoints.get(r),a=pts[pts.length-1],b=pts[0];addPath(path([a,b]),{stroke:color,'stroke-width':selected?3.5:2.5,'stroke-opacity':comparison.highlight&&!selected?.35:1,'stroke-dasharray':'7 5'});}
   }}else{const d=routeGeometry(row);addPath(d,{stroke:'#fff','stroke-width':5.5,'stroke-linejoin':'round','stroke-linecap':'round'});addPath(d,{stroke:'#176c51','stroke-width':3.3,'stroke-linejoin':'round','stroke-linecap':'round'});
    const pts=routePoints.get(row);if(row._closureMeters)addPath(path([pts[pts.length-1],pts[0]]),{stroke:'#df8a25','stroke-width':3,'stroke-dasharray':'7 5'});
-   const [x,y]=pts[0],circle=node('circle',{cx:x,cy:y,fill:'#fff',stroke:'#176c51','stroke-width':3,'vector-effect':'non-scaling-stroke'});overlay.append(circle);markers.push({circle,r:6});}
+   const [x,y]=[pts[0][0]-originX,pts[0][1]-originY],circle=node('circle',{cx:x,cy:y,fill:'#fff',stroke:'#176c51','stroke-width':3,'vector-effect':'non-scaling-stroke'});overlay.append(circle);markers.push({circle,r:6});}
  }
  function draw(){if(dead)return;const [w,h]=size(),s=scale(),left=cx*s-w/2,top=cy*s-h/2;
   // Pan only changes the SVG viewport. Thousands of route coordinates are not rebuilt.
-  paintGeometry();overlay.setAttribute('viewBox',`${cx-w/(2*s)} ${cy-h/(2*s)} ${w/s} ${h/s}`);
+  paintGeometry();overlay.setAttribute('viewBox',`${cx-originX-w/(2*s)} ${cy-originY-h/(2*s)} ${w/s} ${h/s}`);
   for(const marker of markers){marker.circle.setAttribute('r',marker.r/s);if(marker.text){marker.text.setAttribute('font-size',12/s);marker.text.setAttribute('y',marker.y+4/s)}}
   const firstX=Math.floor(left/TILE),lastX=Math.floor((left+w)/TILE),firstY=Math.floor(top/TILE),lastY=Math.floor((top+h)/TILE),n=2**zoom,needed=new Set();
   for(let x=firstX-1;x<=lastX+1;x++)for(let y=firstY-1;y<=lastY+1;y++){if(y<0||y>=n)continue;const key=`${zoom}/${x}/${y}`;needed.add(key);let img=tileNodes.get(key);
