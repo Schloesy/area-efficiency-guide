@@ -24,7 +24,7 @@ Despite these additions, the original purpose remains unchanged: **turning route
 
 ### GPX Route Analysis
 
-- Import GPX files directly into the application.
+- Import GPX files using the file picker or drag and drop (desktop browsers).
 - Calculate recorded route distance and enclosed area.
 - Automatically connect the end of an open route to its start with a straight line **for area calculation**, without adding that connection to the recorded route distance.
 - Detect and calculate individual enclosed regions, including regions formed by route intersections.
