@@ -143,15 +143,24 @@ function createOsmMap(row,language,comparison=null){
  const osmLink=document.createElement('a');osmLink.href='https://www.openstreetmap.org/copyright';osmLink.target='_blank';osmLink.rel='noopener noreferrer';osmLink.textContent='© OpenStreetMap';attribution.append(osmLink);host.append(controls,attribution);
  const TILE=256,MAX=19,MIN=2;
  const merc=([lon,lat])=>{const y=Math.max(-85.05112878,Math.min(85.05112878,lat))*Math.PI/180;return [(lon+180)/360,(1-Math.log(Math.tan(y)+1/Math.cos(y))/Math.PI)/2]};
- const geo=row._geo, coords=(comparison?comparison.routes.filter(r=>comparison.visible.has(r.Datei)).flatMap(r=>r._geo):geo).map(merc);let zoom=12,cx=0,cy=0,dead=false,request=0;
+ const tileNodes=new Map();let frame=0;const geo=row._geo, coords=(comparison?comparison.routes.filter(r=>comparison.visible.has(r.Datei)).flatMap(r=>r._geo):geo).map(merc);let zoom=12,cx=0,cy=0,dead=false,request=0;
  const saved=comparison&&comparisonMapState&&comparisonMapState.kind==='osm'?comparisonMapState:null;
  const size=()=>[Math.max(1,viewport.clientWidth),Math.max(1,viewport.clientHeight)];
  const scale=()=>TILE*2**zoom;
  const project=p=>[(p[0]-cx)*scale()+size()[0]/2,(p[1]-cy)*scale()+size()[1]/2];
  const clamp=()=>{const half=size()[1]/2/scale();cy=Math.max(half,Math.min(1-half,cy));cx=((cx%1)+1)%1};
  function fit(){const visibleCoords=comparison?comparison.routes.filter(r=>comparison.visible.has(r.Datei)).flatMap(r=>r._geo).map(merc):coords;const xs=visibleCoords.map(p=>p[0]),ys=visibleCoords.map(p=>p[1]);const minx=Math.min(...xs),maxx=Math.max(...xs),miny=Math.min(...ys),maxy=Math.max(...ys);cx=(minx+maxx)/2;cy=(miny+maxy)/2;const [w,h]=size();zoom=Math.max(MIN,Math.min(17,Math.floor(Math.log2(Math.min((w-52)/(Math.max(maxx-minx,1e-8)*TILE),(h-52)/(Math.max(maxy-miny,1e-8)*TILE))))));clamp();draw()}
- function draw(){if(dead)return;const [w,h]=size(),s=scale();overlay.setAttribute('viewBox',`0 0 ${w} ${h}`);overlay.replaceChildren();const frag=document.createDocumentFragment();const left=cx*s-w/2,top=cy*s-h/2,firstX=Math.floor(left/TILE),lastX=Math.floor((left+w)/TILE),firstY=Math.floor(top/TILE),lastY=Math.floor((top+h)/TILE),n=2**zoom;
- for(let x=firstX;x<=lastX;x++)for(let y=firstY;y<=lastY;y++){if(y<0||y>=n)continue;const img=document.createElement('img');img.alt='';img.draggable=false;img.loading='lazy';img.decoding='async';img.style.left=(x*TILE-left)+'px';img.style.top=(y*TILE-top)+'px';img.src=`https://tile.openstreetmap.org/${zoom}/${((x%n)+n)%n}/${y}.png`;frag.append(img)}tiles.replaceChildren(frag);
+ function scheduleDraw(){if(!frame&&!dead)frame=requestAnimationFrame(()=>{frame=0;draw()})}
+ function draw(){if(dead)return;const [w,h]=size(),s=scale();overlay.setAttribute('viewBox',`0 0 ${w} ${h}`);overlay.replaceChildren(); const left=cx*s-w/2,top=cy*s-h/2,firstX=Math.floor(left/TILE),lastX=Math.floor((left+w)/TILE),firstY=Math.floor(top/TILE),lastY=Math.floor((top+h)/TILE),n=2**zoom;
+ const needed=new Set();
+ for(let x=firstX-1;x<=lastX+1;x++)for(let y=firstY-1;y<=lastY+1;y++){
+  if(y<0||y>=n)continue;
+  const key=`${zoom}/${x}/${y}`;needed.add(key);
+  let img=tileNodes.get(key);
+  if(!img){img=document.createElement('img');img.alt='';img.draggable=false;img.loading='eager';img.decoding='async';img.src=`https://tile.openstreetmap.org/${zoom}/${((x%n)+n)%n}/${y}.png`;tileNodes.set(key,img);tiles.append(img)}
+  img.style.left=(x*TILE-left)+'px';img.style.top=(y*TILE-top)+'px';
+ }
+ for(const [key,img] of tileNodes)if(!needed.has(key)){img.remove();tileNodes.delete(key)}
  const NS='http://www.w3.org/2000/svg',node=(tag,attrs)=>{const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));return e};
  const inverse=p=>{const [lon0,lat0]=row._projection,xx=p[0]/R,yy=p[1]/R,rho=Math.hypot(xx,yy);if(rho<1e-12)return [lon0*180/Math.PI,lat0*180/Math.PI];const c=2*Math.asin(Math.min(1,rho/2)),lat=Math.asin(Math.cos(c)*Math.sin(lat0)+yy*Math.sin(c)*Math.cos(lat0)/rho),lon=lon0+Math.atan2(xx*Math.sin(c),rho*Math.cos(lat0)*Math.cos(c)-yy*Math.sin(lat0)*Math.sin(c));return [lon*180/Math.PI,lat*180/Math.PI]};
  const pt=p=>project(merc(inverse(p)));const d=points=>points.map((p,i)=>{const q=pt(p);return (i?'L':'M')+q[0].toFixed(2)+' '+q[1].toFixed(2)}).join(' ');
@@ -170,10 +179,10 @@ function createOsmMap(row,language,comparison=null){
  viewport.addEventListener('wheel',e=>{e.preventDefault();const r=viewport.getBoundingClientRect();zoomAt(zoom+(e.deltaY<0?1:-1),e.clientX-r.left,e.clientY-r.top)},{passive:false});
  const pointers=new Map();let lastPinch=null;
  viewport.addEventListener('pointerdown',e=>{if(e.button!==0&&e.pointerType==='mouse')return;viewport.setPointerCapture(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);lastPinch=null});
- viewport.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;const previous=pointers.get(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);if(pointers.size===1){cx-=(e.clientX-previous[0])/scale();cy-=(e.clientY-previous[1])/scale();clamp();draw()}else if(pointers.size===2){const a=[...pointers.values()],dist=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);if(lastPinch!==null&&dist>lastPinch*1.5){zoomAt(zoom+1,size()[0]/2,size()[1]/2);lastPinch=dist}else if(lastPinch!==null&&dist<lastPinch/1.5){zoomAt(zoom-1,size()[0]/2,size()[1]/2);lastPinch=dist}else if(lastPinch===null)lastPinch=dist}});
+ viewport.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;const previous=pointers.get(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);if(pointers.size===1){cx-=(e.clientX-previous[0])/scale();cy-=(e.clientY-previous[1])/scale();clamp();scheduleDraw()}else if(pointers.size===2){const a=[...pointers.values()],dist=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);if(lastPinch!==null&&dist>lastPinch*1.5){zoomAt(zoom+1,size()[0]/2,size()[1]/2);lastPinch=dist}else if(lastPinch!==null&&dist<lastPinch/1.5){zoomAt(zoom-1,size()[0]/2,size()[1]/2);lastPinch=dist}else if(lastPinch===null)lastPinch=dist}});
  for(const type of ['pointerup','pointercancel','lostpointercapture'])viewport.addEventListener(type,e=>{pointers.delete(e.pointerId);lastPinch=null});
  let fitted=false;const observer=new ResizeObserver(()=>{if(dead)return;if(viewport.clientWidth>1&&viewport.clientHeight>1){if(!fitted){fitted=true;if(saved){zoom=saved.zoom;cx=saved.cx;cy=saved.cy;clamp();draw()}else fit()}else draw()}});observer.observe(viewport);
- return {element:host,getState(){return {kind:'osm',zoom,cx,cy}},destroy(){dead=true;observer.disconnect();tiles.replaceChildren();overlay.replaceChildren()}};
+ return {element:host,getState(){return {kind:'osm',zoom,cx,cy}},destroy(){dead=true;if(frame)cancelAnimationFrame(frame);observer.disconnect();tileNodes.clear();tiles.replaceChildren();overlay.replaceChildren()}};
 }
 
 const COMPARISON_COLORS=['#2563eb','#ea580c','#16a34a','#a21caf','#dc2626','#0891b2','#b45309','#4f46e5'];
