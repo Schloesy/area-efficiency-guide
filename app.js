@@ -244,13 +244,33 @@ if(typeof document!=='undefined'){
   el('updateTitle').textContent=t().update;el('updateButton').textContent=t().updateAction;el('updateNote').textContent=t().updateNote;
   for(const m of activeMaps)m.destroy();activeMaps=[];const results=el('results');results.replaceChildren();
   try{renderComparison()}catch(error){console.error('Comparison map render failed:',error);comparisonMapInstance=null;const host=el('comparison');const notice=document.createElement('p');notice.className='small error';notice.textContent=language==='de'?'Vergleichskarte konnte nicht angezeigt werden. Die Einzelauswertungen bleiben erhalten.':'Comparison map could not be displayed. Individual results remain available.';host.append(notice)}
-  for(const row of rows){const div=document.createElement('div');div.className='route';const title=document.createElement('h3');title.textContent=row.Datei;div.append(title);
+  // Match individual result order to the active comparison table when comparison is expanded.
+  const comparisonEligible=rows.filter(r=>r.Strecke_km!==undefined&&r.Teilflaechen>0);
+  const comparisonActive=compareOpen&&comparisonEligible.length>=2;
+  const comparisonOrder=comparisonActive?[...comparisonEligible].sort((a,b)=>compareMetric==='area'?b.Flaeche_km2-a.Flaeche_km2:compareMetric==='length'?b.Strecke_km-a.Strecke_km:b.Kreis_Effizienz_Prozent-a.Kreis_Effizienz_Prozent):[];
+  const orderedRows=comparisonActive?[...comparisonOrder,...rows.filter(r=>!comparisonEligible.includes(r))]:rows;
+  for(const row of orderedRows){const div=document.createElement('div');div.className='route';const title=document.createElement('h3');title.textContent=row.Datei;
+   if(comparisonActive&&comparisonEligible.includes(row)){title.classList.add('comparison-colored-title');title.style.setProperty('--route-color',COMPARISON_COLORS[comparisonEligible.indexOf(row)%COMPARISON_COLORS.length]);}
+   div.append(title);
    if(row.Strecke_km!==undefined){try{const mapSlot=document.createElement('div');if(osmEnabled){const m=createOsmMap(row,language);activeMaps.push(m);const mapFrame=document.createElement('div');mapFrame.className='route-map osm-route-frame';mapFrame.append(m.element);appendLineLegend(mapFrame,row,language);mapSlot.append(mapFrame)}else mapSlot.append(renderRoute(row));div.append(mapSlot)}catch(e){const warning=document.createElement('p');warning.className='small error';warning.textContent='Route display: '+e.message;div.append(warning)}const stats=document.createElement('div');stats.className='stats';for(const [label,value] of [[t().distance,fmt(row.Strecke_km,2)+' km'],[t().area,fmt(row.Flaeche_km2,2)+' km²'],[t().circle,fmt(row.Kreis_Effizienz_Prozent,2)+' %'],[t().square,fmt(row.Quadrat_Effizienz_Prozent,2)+' %']]){const box=document.createElement('div'),small=document.createElement('span'),strong=document.createElement('strong');box.className='stat';small.textContent=label;strong.textContent=value;box.append(small,strong);if(label===t().circle||label===t().square){const max=document.createElement('span');const ideal=row.Strecke_km**2/(label===t().circle?4*Math.PI:16);max.textContent=t().maxArea+fmt(ideal,2)+' km²';box.append(max)}stats.append(box)}div.append(stats);if(row._closureMeters){const notice=document.createElement('p');notice.className='small closure-notice';notice.append(document.createTextNode(t().autoClosed+' '));const meters=document.createElement('strong');meters.className='closure-distance';meters.textContent=fmt(row._closureMeters,2)+' m';notice.append(meters);div.append(notice)}
    if(row._faceAreas&&row._faceAreas.length)div.append(renderFaceDetails(row,t(),fmt,areaUnit,setAreaUnit))}
    if(row.Strecke_km===undefined||!row.Teilflaechen){const info=document.createElement('p');info.className=row.Strecke_km===undefined?'small error':'small';info.textContent=row.Strecke_km===undefined?t().error+': '+translateError(row._error,language):t().noFaces;div.append(info)}results.append(div);
   }
  };
 
+ function syncResultOrderAndColors(){
+  const host=el('results');
+  const valid=rows.filter(r=>r.Strecke_km!==undefined&&r.Teilflaechen>0);
+  const active=compareOpen&&valid.length>=2;
+  const ordered=active?[...valid].sort((a,b)=>compareMetric==='area'?b.Flaeche_km2-a.Flaeche_km2:compareMetric==='length'?b.Strecke_km-a.Strecke_km:b.Kreis_Effizienz_Prozent-a.Kreis_Effizienz_Prozent):[];
+  const orderedRows=active?[...ordered,...rows.filter(r=>!valid.includes(r))]:rows;
+  const cards=Array.from(host.children);
+  for(const [index,row] of rows.entries()){
+   const title=cards[index]?.querySelector('h3');
+   if(title){title.classList.toggle('comparison-colored-title',active&&valid.includes(row));if(active&&valid.includes(row))title.style.setProperty('--route-color',COMPARISON_COLORS[valid.indexOf(row)%COMPARISON_COLORS.length]);else title.style.removeProperty('--route-color')}
+  }
+  for(const row of orderedRows){const originalIndex=rows.indexOf(row);if(cards[originalIndex])host.append(cards[originalIndex])}
+ }
  function renderComparison(){
   const host=el('comparison');if(comparisonMapInstance&&comparisonMapInstance.getState)comparisonMapState=comparisonMapInstance.getState();comparisonMapInstance=null;host.replaceChildren();
   const valid=rows.filter(r=>r.Strecke_km!==undefined&&r.Teilflaechen>0);
@@ -261,13 +281,13 @@ if(typeof document!=='undefined'){
   const sortChoices=[['efficiency',t().compareEfficiency],['area',t().compareAreaSort],['length',t().compareLengthSort]];
   const sort=document.createElement('select');sort.className='compare-select compare-sort-native';sort.setAttribute('aria-label',t().compareSort);
   for(const [value,label] of sortChoices){const o=document.createElement('option');o.value=value;o.textContent=label;sort.append(o)}
-  sort.value=compareMetric;sort.addEventListener('change',()=>{compareMetric=sort.value;renderComparison()});toolbar.append(sort);
+  sort.value=compareMetric;sort.addEventListener('change',()=>{compareMetric=sort.value;renderComparison();syncResultOrderAndColors()});toolbar.append(sort);
   const mobileSort=document.createElement('div');mobileSort.className='compare-sort-mobile';
   const sortTrigger=document.createElement('button');sortTrigger.type='button';sortTrigger.className='compare-focus-trigger compare-sort-trigger';sortTrigger.setAttribute('aria-label',t().compareSort);sortTrigger.setAttribute('aria-expanded','false');
   const sortLabel=document.createElement('span');sortLabel.className='compare-focus-label';sortLabel.textContent=sortChoices.find(([value])=>value===compareMetric)[1];
   const sortChevron=document.createElement('span');sortChevron.textContent='⌄';sortTrigger.append(sortLabel,sortChevron);
   const sortPanel=document.createElement('div');sortPanel.className='compare-focus-panel compare-sort-panel';sortPanel.hidden=true;
-  for(const [value,label] of sortChoices){const btn=document.createElement('button');btn.type='button';btn.className='compare-focus-option';if(value===compareMetric)btn.classList.add('selected');const txt=document.createElement('span');txt.textContent=label;btn.append(txt);if(value===compareMetric){const check=document.createElement('strong');check.textContent='✓';btn.append(check)}btn.addEventListener('click',()=>{compareMetric=value;renderComparison()});sortPanel.append(btn)}
+  for(const [value,label] of sortChoices){const btn=document.createElement('button');btn.type='button';btn.className='compare-focus-option';if(value===compareMetric)btn.classList.add('selected');const txt=document.createElement('span');txt.textContent=label;btn.append(txt);if(value===compareMetric){const check=document.createElement('strong');check.textContent='✓';btn.append(check)}btn.addEventListener('click',()=>{compareMetric=value;renderComparison();syncResultOrderAndColors()});sortPanel.append(btn)}
   sortTrigger.addEventListener('click',()=>{sortPanel.hidden=!sortPanel.hidden;sortTrigger.setAttribute('aria-expanded',String(!sortPanel.hidden))});
   mobileSort.append(sortTrigger,sortPanel);toolbar.append(mobileSort);
   document.addEventListener('pointerdown',function closeSortOnOutside(e){if(!mobileSort.isConnected){document.removeEventListener('pointerdown',closeSortOnOutside);return}if(!mobileSort.contains(e.target)){sortPanel.hidden=true;sortTrigger.setAttribute('aria-expanded','false')}}, {passive:true});
