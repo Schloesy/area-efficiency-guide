@@ -1,5 +1,5 @@
-const CACHE='area-guide-offline-v1086-gpx-drag-drop';
-const FILES=['./','./index.html','./app.js?v=1086','./geometry-worker.js?v=1086','./manifest.webmanifest','./icon.svg'];
+const CACHE='area-guide-offline-v1087-ui-text-refinements';
+const FILES=['./','./index.html','./app.js?v=1087','./geometry-worker.js?v=1087','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES))));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const key of await caches.keys())if(key.startsWith('area-guide-offline-')&&key!==CACHE)await caches.delete(key);await self.clients.claim()})()));
 self.addEventListener('message',event=>{if(event.data&&event.data.type==='SKIP_WAITING')self.skipWaiting()});
