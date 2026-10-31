@@ -255,3 +255,4 @@ Area Efficiency Guide for INTVL is guided by five principles:
 - Improved map label placement to avoid recorded route lines and collisions between label leaders.
 - Leader lines end at the label circle edge; previous relative positions are preferred to reduce jumping when panning.
 - Calculations, route drawing, area fill colors, and collapsed area list remain unchanged.
+\n### v1.0.9.2 – Area Label Anchor Refinement\n\n- Prefer central anchor points along elongated partial areas for clearer label placement.\n- Retain collision avoidance, green/blue area fills, route rendering, and calculation behavior.\n

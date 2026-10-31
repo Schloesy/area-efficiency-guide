@@ -106,6 +106,45 @@ function interiorLabelPoint(ring){
  for(let i=1;i<ring.length-1;i++){const a=ring[0],b=ring[i],c=ring[i+1];const p=[(a[0]+b[0]+c[0])/3,(a[1]+b[1]+c[1])/3];if(pointInPolygon(p,ring))return p;}
  return ring[0];
 }
+// Anchor elongated polygons near their longitudinal midpoint rather than at an end.
+// This affects label placement only; polygon geometry and area calculations stay intact.
+function visualAreaAnchor(ring){
+ if(!ring||ring.length<3)return interiorLabelPoint(ring);
+ let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+ for(const [x,y] of ring){minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y)}
+ const midX=(minX+maxX)/2,midY=(minY+maxY)/2;
+ // Dominant direction from the polygon's bounding dimensions. For a thin
+ // diagonal strip, use covariance of vertices to align the cross-section.
+ let xx=0,xy=0,yy=0;
+ for(const [x,y] of ring){const dx=x-midX,dy=y-midY;xx+=dx*dx;xy+=dx*dy;yy+=dy*dy}
+ const angle=.5*Math.atan2(2*xy,xx-yy);
+ const ux=Math.cos(angle),uy=Math.sin(angle),vx=-uy,vy=ux;
+ let low=Infinity,high=-Infinity;
+ for(const [x,y] of ring){const t=(x-midX)*ux+(y-midY)*uy;low=Math.min(low,t);high=Math.max(high,t)}
+ const mid=(low+high)/2;
+ // Intersect the middle cross-section with the polygon, then use the widest
+ // interior interval. This keeps the anchor inside even for concave strips.
+ const hits=[];
+ for(let i=0;i<ring.length;i++){
+  const a=ring[i],b=ring[(i+1)%ring.length];
+  const ta=(a[0]-midX)*ux+(a[1]-midY)*uy-mid;
+  const tb=(b[0]-midX)*ux+(b[1]-midY)*uy-mid;
+  if((ta<0&&tb>=0)||(tb<0&&ta>=0)){
+   const f=ta/(ta-tb),x=a[0]+f*(b[0]-a[0]),y=a[1]+f*(b[1]-a[1]);
+   hits.push((x-midX)*vx+(y-midY)*vy);
+  }
+ }
+ hits.sort((a,b)=>a-b);
+ let best=null;
+ for(let i=0;i+1<hits.length;i+=2){
+  const t=(hits[i]+hits[i+1])/2;
+  const candidate=[midX+mid*ux+t*vx,midY+mid*uy+t*vy];
+  const width=hits[i+1]-hits[i];
+  if(width>0&&pointInPolygon(candidate,ring)&&(!best||width>best.width))best={point:candidate,width};
+ }
+ if(best)return best.point;
+ return interiorLabelPoint(ring);
+}
 function renderFaceDetails(row,lang,fmt,unit,onUnitChange){
  const section=document.createElement('details');section.className='face-details';
  const head=document.createElement('summary');head.className='face-header';
@@ -161,7 +200,7 @@ function renderRoute(row){
  const [sx,sy]=point(xy[0]);svg.append(make('circle',{cx:sx,cy:sy,r:7,fill:'#fefefe',stroke:'#176c51','stroke-width':3}));
  const [ex,ey]=point(xy[xy.length-2]||xy[0]);svg.append(make('circle',{cx:ex,cy:ey,r:3,fill:'#176c51'}));
  const names=faceNames(row);
- const items=rings.map((ring,index)=>{const [x,y]=point(interiorLabelPoint(ring));const area=faceAreas[index]||0;return {index,x,y,area,diameter:2*Math.sqrt(area/Math.PI)*scale}});
+ const items=rings.map((ring,index)=>{const [x,y]=point(visualAreaAnchor(ring));const area=faceAreas[index]||0;return {index,x,y,area,diameter:2*Math.sqrt(area/Math.PI)*scale}});
  const routeScreen=xy.slice(0,-1).map(point);
  const positions=placeFaceLabels(items,w,h,routeScreen);
  for(const item of items){const pos=positions.get(item.index);if(!pos)continue;
@@ -222,7 +261,7 @@ function createOsmMap(row,language,comparison=null){
  const inverse=p=>{const [lon0,lat0]=row._projection,xx=p[0]/R,yy=p[1]/R,rho=Math.hypot(xx,yy);if(rho<1e-12)return [lon0*180/Math.PI,lat0*180/Math.PI];const c=2*Math.asin(Math.min(1,rho/2)),lat=Math.asin(Math.cos(c)*Math.sin(lat0)+yy*Math.sin(c)*Math.cos(lat0)/rho),lon=lon0+Math.atan2(xx*Math.sin(c),rho*Math.cos(lat0)*Math.cos(c)-yy*Math.sin(lat0)*Math.sin(c));return [lon*180/Math.PI,lat*180/Math.PI]};
  const routePoints=new Map();if(comparison){for(const r of comparison.routes)routePoints.set(r,r._geo.map(merc))}else routePoints.set(row,row._geo.map(merc));
  const ringPoints=!comparison?row._rings.map(r=>r.map(p=>merc(inverse(p)))):[];
- const ringLabels=!comparison?row._rings.map(r=>merc(inverse(interiorLabelPoint(r)))):[];
+ const ringLabels=!comparison?row._rings.map(r=>merc(inverse(visualAreaAnchor(r)))):[];
  const ringNames=!comparison?faceNames(row):[];
  // Use route-local SVG coordinates to avoid subpixel jitter at high OSM zoom levels.
  const [originX,originY]=coords[0]||[0,0];
