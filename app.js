@@ -32,6 +32,31 @@ function evaluate(name,xml){let seg=readGpx(xml),points=seg.flat(),length=0;for(
  let lon0=points.reduce((a,p)=>a+p[0],0)/points.length*rad,lat0=points.reduce((a,p)=>a+p[1],0)/points.length*rad;let xy=points.map(p=>{let lon=p[0]*rad,lat=p[1]*rad,d=lon-lon0,cosc=Math.sin(lat0)*Math.sin(lat)+Math.cos(lat0)*Math.cos(lat)*Math.cos(d),k=Math.sqrt(2/(1+cosc));return [R*k*Math.cos(lat)*Math.sin(d),R*k*(Math.cos(lat0)*Math.sin(lat)-Math.sin(lat0)*Math.cos(lat)*Math.cos(d))]});xy.push(xy[0]);let result=facesArea(xy),km=length/1000,area=result.area/1e6,circle=km*km/(4*Math.PI),square=km*km/16;return {Datei:name,Strecke_km:round(km,4),Flaeche_km2:round(area,4),Kreis_ideal_km2:round(circle,4),Kreis_Effizienz_Prozent:round(area/circle*100,2),Quadrat_ideal_km2:round(square,4),Quadrat_Effizienz_Prozent:round(area/square*100,2),Start_Ziel_Abstand_m:round(closure,2),Teilflaechen:result.faces,_faceAreas:result.faceAreas,Status:result.faces?'OK':'Keine geschlossene Teilfläche erkannt',_xy:xy,_rings:result.rings,_geo:points,_closureMeters:closure>30?round(closure,2):0,_projection:[lon0,lat0]};}
 
 function faceLabel(i){let result='';for(let n=i+1;n>0;n=Math.floor((n-1)/26))result=String.fromCharCode(65+(n-1)%26)+result;return result;}
+// Presentation-only ordering: original ring geometry and calculated areas stay untouched.
+function faceOrder(row){return (row._faceAreas||[]).map((_,i)=>i).sort((a,b)=>row._faceAreas[b]-row._faceAreas[a]||a-b)}
+function faceNames(row){const names=[];faceOrder(row).forEach((index,rank)=>names[index]=faceLabel(rank));return names}
+// Layout in screen pixels so zooming never shrinks labels or their leader lines.
+function placeFaceLabels(items,w,h){
+ const placed=[],result=new Map(),radius=12,margin=15;
+ const inside=(x,y)=>x>=margin&&x<=w-margin&&y>=margin&&y<=h-margin;
+ const free=(x,y)=>placed.every(p=>Math.hypot(p[0]-x,p[1]-y)>=29);
+ // Largest faces receive placement priority, while small faces use nearby callouts.
+ for(const item of [...items].sort((a,b)=>b.area-a.area)){
+  const {x,y,diameter}=item;
+  if(!Number.isFinite(x)||!Number.isFinite(y))continue;
+  if(x < -70||x>w+70||y < -70||y>h+70)continue;
+  let chosen=null;
+  if(diameter>=32&&inside(x,y)&&free(x,y))chosen=[x,y];
+  if(!chosen){
+   const offsets=[[-26,-29],[0,-39],[28,-28],[-38,0],[38,0],[-29,30],[0,39],[29,30],[-53,-22],[53,-22],[-53,22],[53,22],[-65,0],[65,0]];
+   for(const [dx,dy] of offsets){const nx=x+dx,ny=y+dy;if(inside(nx,ny)&&free(nx,ny)){chosen=[nx,ny];break}}
+  }
+  // Never draw an unreadable stack of labels if no nearby location is free.
+  if(!chosen)continue;
+  placed.push(chosen);result.set(item.index,{x:chosen[0],y:chosen[1],external:Math.hypot(chosen[0]-x,chosen[1]-y)>3});
+ }
+ return result;
+}
 function signedDoubleArea(a,b,c){return cross(sub(b,a),sub(c,a));}
 function pointInPolygon(p,poly){let inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){
  const a=poly[i],b=poly[j];if((a[1]>p[1])!==(b[1]>p[1])&&p[0]<(b[0]-a[0])*(p[1]-a[1])/(b[1]-a[1])+a[0])inside=!inside;
@@ -45,25 +70,26 @@ function interiorLabelPoint(ring){
  return ring[0];
 }
 function renderFaceDetails(row,lang,fmt,unit,onUnitChange){
- const section=document.createElement('section');section.className='face-details';
- const head=document.createElement('div');head.className='face-header';
- const heading=document.createElement('h4');heading.textContent=lang.faceBreakdown;head.append(heading);
+ const section=document.createElement('details');section.className='face-details';
+ const head=document.createElement('summary');head.className='face-header';
+ const heading=document.createElement('h4');heading.textContent=lang.faceBreakdown+' ('+row._faceAreas.length+')';head.append(heading);section.append(head);
+ const content=document.createElement('div');content.className='face-content';
  const control=document.createElement('div');control.className='unit-control';control.setAttribute('role','group');control.setAttribute('aria-label',lang.areaUnit);
  for(const [value,label] of [['km2','km²'],['m2','m²']]){
   const button=document.createElement('button');button.type='button';button.className='unit-button'+(unit===value?' active':'');button.textContent=label;button.setAttribute('aria-pressed',String(unit===value));
   button.dataset.unit=value;button.addEventListener('click',()=>onUnitChange(value));
   control.append(button);
  }
- head.append(control);section.append(head);
+ content.append(control);
  const table=document.createElement('table');table.className='face-table';const tbody=document.createElement('tbody');
- (row._faceAreas||[]).forEach((area,i)=>{
+ faceOrder(row).forEach((i,rank)=>{const area=row._faceAreas[i];
   const tr=document.createElement('tr'),name=document.createElement('th'),value=document.createElement('td');
-  name.textContent=lang.face+' '+faceLabel(i);value.dataset.areaM2=String(area);tr.append(name,value);tbody.append(tr);
+  name.textContent=lang.face+' '+faceLabel(rank);value.dataset.areaM2=String(area);tr.append(name,value);tbody.append(tr);
  });
  const tr=document.createElement('tr'),name=document.createElement('th'),value=document.createElement('td');
  name.textContent=lang.faceSum;value.dataset.areaM2=String((row._faceAreas||[]).reduce((a,b)=>a+b,0));tr.append(name,value);tbody.append(tr);
- table.append(tbody);section.append(table);
- const note=document.createElement('p');note.className='small';note.textContent=lang.faceNote;section.append(note);
+ table.append(tbody);content.append(table);
+ const note=document.createElement('p');note.className='small';note.textContent=lang.faceNote;content.append(note);section.append(content);
  updateFaceUnits(section,unit,fmt);return section;
 }
 function updateFaceUnits(section,unit,fmt){
@@ -92,19 +118,19 @@ function renderRoute(row){
  svg.append(make('rect',{x:0,y:0,width:w,height:h,rx:14,fill:'#f3f8f3'}));
  for(let x=40;x<w;x+=40)svg.append(make('line',{x1:x,y1:0,x2:x,y2:h,stroke:'#e3eee4','stroke-width':1}));
  for(let y=30;y<h;y+=40)svg.append(make('line',{x1:0,y1:y,x2:w,y2:y,stroke:'#e3eee4','stroke-width':1}));
- for(let i=0;i<rings.length;i++){
-  const ring=rings[i];svg.append(make('path',{d:path(ring)+' Z',fill:i%2?'#8fc9e4':'#82cfa0','fill-opacity':'0.58',stroke:'none'}));
-  // An interior point, chosen from a triangle fan, avoids placing labels outside concave polygons.
-  const labelPoint=interiorLabelPoint(ring);
-  const [lx,ly]=point(labelPoint);
-  const disk=make('circle',{cx:lx,cy:ly,r:12,fill:'#ffffff','fill-opacity':'0.92',stroke:'#176c51','stroke-width':1.4});
-  const text=make('text',{x:lx,y:ly+4,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#176c51'});
-  text.textContent=faceLabel(i);svg.append(disk,text);
- }
+ for(let i=0;i<rings.length;i++)svg.append(make('path',{d:path(rings[i])+' Z',fill:i%2?'#8fc9e4':'#82cfa0','fill-opacity':'0.58',stroke:'none'}));
  svg.append(make('path',{d:path(xy.slice(0,-1)),fill:'none',stroke:'#176c51','stroke-width':3.5,'stroke-linecap':'round','stroke-linejoin':'round'}));
  if(row._closureMeters)svg.append(make('path',{d:path([xy[xy.length-2],xy[0]]),fill:'none',stroke:'#df8a25','stroke-width':3,'stroke-dasharray':'7 5','stroke-linecap':'round'}));
  const [sx,sy]=point(xy[0]);svg.append(make('circle',{cx:sx,cy:sy,r:7,fill:'#fefefe',stroke:'#176c51','stroke-width':3}));
  const [ex,ey]=point(xy[xy.length-2]||xy[0]);svg.append(make('circle',{cx:ex,cy:ey,r:3,fill:'#176c51'}));
+ const names=faceNames(row);
+ const items=rings.map((ring,index)=>{const [x,y]=point(interiorLabelPoint(ring));const area=faceAreas[index]||0;return {index,x,y,area,diameter:2*Math.sqrt(area/Math.PI)*scale}});
+ const positions=placeFaceLabels(items,w,h);
+ for(const item of items){const pos=positions.get(item.index);if(!pos)continue;
+  if(pos.external)svg.append(make('line',{x1:item.x,y1:item.y,x2:pos.x,y2:pos.y,stroke:'#176c51','stroke-width':1.25,'stroke-opacity':'.8'}));
+  svg.append(make('circle',{cx:pos.x,cy:pos.y,r:12,fill:'#fff','fill-opacity':'.92',stroke:'#176c51','stroke-width':1.4}));
+  const label=make('text',{x:pos.x,y:pos.y+4,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#176c51'});label.textContent=names[item.index];svg.append(label);
+ }
  wrapper.append(svg);
  appendLineLegend(wrapper,row,document.documentElement.lang);
  return wrapper;
@@ -159,6 +185,7 @@ function createOsmMap(row,language,comparison=null){
  const routePoints=new Map();if(comparison){for(const r of comparison.routes)routePoints.set(r,r._geo.map(merc))}else routePoints.set(row,row._geo.map(merc));
  const ringPoints=!comparison?row._rings.map(r=>r.map(p=>merc(inverse(p)))):[];
  const ringLabels=!comparison?row._rings.map(r=>merc(inverse(interiorLabelPoint(r)))):[];
+ const ringNames=!comparison?faceNames(row):[];
  // Use route-local SVG coordinates to avoid subpixel jitter at high OSM zoom levels.
  const [originX,originY]=coords[0]||[0,0];
  // Fixed, pixel-sized SVG coordinates avoid microscopic path/viewBox values.
@@ -168,8 +195,7 @@ function createOsmMap(row,language,comparison=null){
   const pts=routePoints.get(r),reduced=simplify(pts,0.65/scale()),value=path(reduced);geometryCache.set(key,value);return value;}
  function paintGeometry(){if(dead||drawnZoom===zoom)return;drawnZoom=zoom;overlay.replaceChildren();markers.length=0;
   const addPath=(d,attrs)=>overlay.append(node('path',{d,fill:'none','vector-effect':'non-scaling-stroke',...attrs}));
-  if(!comparison)for(let i=0;i<ringPoints.length;i++){const ring=ringPoints[i],reduced=simplify(ring,0.5/scale());overlay.append(node('path',{d:path(reduced)+' Z',fill:i%2?'#8fc9e4':'#82cfa0','fill-opacity':'.34',stroke:'none'}));
-   const [absoluteX,absoluteY]=ringLabels[i],x=(absoluteX-originX)*SVG_SCALE,y=(absoluteY-originY)*SVG_SCALE,circle=node('circle',{cx:x,cy:y,fill:'#fff','fill-opacity':'.9',stroke:'#176c51','stroke-width':1.5,'vector-effect':'non-scaling-stroke'}),text=node('text',{x,y,'text-anchor':'middle','font-weight':700,fill:'#176c51'});text.textContent=faceLabel(i);overlay.append(circle,text);markers.push({circle,text,y,r:12});}
+  if(!comparison)for(let i=0;i<ringPoints.length;i++){const ring=ringPoints[i],reduced=simplify(ring,0.5/scale());overlay.append(node('path',{d:path(reduced)+' Z',fill:i%2?'#8fc9e4':'#82cfa0','fill-opacity':'.34',stroke:'none'}));}
   if(comparison){for(const r of comparison.drawOrder){if(!comparison.visible.has(r.Datei))continue;const i=comparison.routes.indexOf(r),color=COMPARISON_COLORS[i%COMPARISON_COLORS.length],selected=comparison.highlight===r.Datei,d=routeGeometry(r);
    addPath(d,{stroke:'#fff','stroke-width':selected?7:5,'stroke-opacity':selected?1:.65,'stroke-linejoin':'round','stroke-linecap':'round'});
    addPath(d,{stroke:color,'stroke-width':selected?4.5:2.8,'stroke-opacity':comparison.highlight&&!selected?.35:1,'stroke-linejoin':'round','stroke-linecap':'round'});
@@ -177,11 +203,36 @@ function createOsmMap(row,language,comparison=null){
   }}else{const d=routeGeometry(row);addPath(d,{stroke:'#fff','stroke-width':5.5,'stroke-linejoin':'round','stroke-linecap':'round'});addPath(d,{stroke:'#176c51','stroke-width':3.3,'stroke-linejoin':'round','stroke-linecap':'round'});
    const pts=routePoints.get(row);if(row._closureMeters)addPath(path([pts[pts.length-1],pts[0]]),{stroke:'#df8a25','stroke-width':3,'stroke-dasharray':'7 5'});
    const [x,y]=[(pts[0][0]-originX)*SVG_SCALE,(pts[0][1]-originY)*SVG_SCALE],circle=node('circle',{cx:x,cy:y,fill:'#fff',stroke:'#176c51','stroke-width':3,'vector-effect':'non-scaling-stroke'});overlay.append(circle);markers.push({circle,r:6});}
+  if(!comparison){
+   const layer=node('g',{});overlay.append(layer);
+   for(let i=0;i<ringLabels.length;i++){
+    const [absoluteX,absoluteY]=ringLabels[i],x=(absoluteX-originX)*SVG_SCALE,y=(absoluteY-originY)*SVG_SCALE;
+    const leader=node('line',{stroke:'#176c51','stroke-width':1.25,'stroke-opacity':'.85','vector-effect':'non-scaling-stroke'});
+    const circle=node('circle',{fill:'#fff','fill-opacity':'.92',stroke:'#176c51','stroke-width':1.5,'vector-effect':'non-scaling-stroke'});
+    const text=node('text',{'text-anchor':'middle','font-weight':700,fill:'#176c51'});text.textContent=ringNames[i];
+    layer.append(leader,circle,text);
+    markers.push({index:i,anchorX:x,anchorY:y,area:row._faceAreas[i],leader,circle,text,r:12});
+   }
+  }
  }
  function draw(){if(dead)return;const [w,h]=size(),s=scale(),left=cx*s-w/2,top=cy*s-h/2;
   // Pan only changes the SVG viewport. Thousands of route coordinates are not rebuilt.
   paintGeometry();overlay.setAttribute('viewBox',`${(cx-originX-w/(2*s))*SVG_SCALE} ${(cy-originY-h/(2*s))*SVG_SCALE} ${w/s*SVG_SCALE} ${h/s*SVG_SCALE}`);
-  for(const marker of markers){marker.circle.setAttribute('r',marker.r*SVG_SCALE/s);if(marker.text){marker.text.setAttribute('font-size',12*SVG_SCALE/s);marker.text.setAttribute('y',marker.y+4*SVG_SCALE/s)}}
+  const pixelScale=s/SVG_SCALE,viewX=(cx-originX)*s-w/2,viewY=(cy-originY)*s-h/2;
+  const labelItems=markers.filter(m=>m.text).map(m=>({index:m.index,x:m.anchorX*pixelScale-viewX,y:m.anchorY*pixelScale-viewY,area:m.area,diameter:2*Math.sqrt(m.area/Math.PI)*s/R})); 
+  // Area is in square metres; Web Mercator pixel size depends on latitude.
+  for(const item of labelItems){const lat=row._projection[1];item.diameter=2*Math.sqrt(item.area/Math.PI)*s/(R*2*Math.PI*Math.max(.01,Math.cos(lat)));}
+  const labelPositions=placeFaceLabels(labelItems,w,h);
+  for(const marker of markers){
+   if(!marker.text){marker.circle.setAttribute('r',marker.r*SVG_SCALE/s);continue}
+   const pos=labelPositions.get(marker.index),visible=!!pos;
+   marker.circle.style.display=marker.text.style.display=visible?'':'none';marker.leader.style.display=visible&&pos.external?'':'none';
+   if(!visible)continue;
+   const lx=(pos.x+viewX)/pixelScale,ly=(pos.y+viewY)/pixelScale;
+   marker.circle.setAttribute('cx',lx);marker.circle.setAttribute('cy',ly);marker.circle.setAttribute('r',12/pixelScale);
+   marker.text.setAttribute('x',lx);marker.text.setAttribute('y',ly+4/pixelScale);marker.text.setAttribute('font-size',12/pixelScale);
+   if(pos.external){marker.leader.setAttribute('x1',marker.anchorX);marker.leader.setAttribute('y1',marker.anchorY);marker.leader.setAttribute('x2',lx);marker.leader.setAttribute('y2',ly)}
+  }
   const firstX=Math.floor(left/TILE),lastX=Math.floor((left+w)/TILE),firstY=Math.floor(top/TILE),lastY=Math.floor((top+h)/TILE),n=2**zoom,needed=new Set();
   for(let x=firstX-1;x<=lastX+1;x++)for(let y=firstY-1;y<=lastY+1;y++){if(y<0||y>=n)continue;const key=`${zoom}/${x}/${y}`;needed.add(key);let img=tileNodes.get(key);
    if(!img){img=document.createElement('img');img.alt='';img.draggable=false;img.loading='eager';img.decoding='async';img.src=`https://tile.openstreetmap.org/${zoom}/${((x%n)+n)%n}/${y}.png`;tileNodes.set(key,img);tiles.append(img)}

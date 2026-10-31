@@ -241,3 +241,10 @@ Area Efficiency Guide for INTVL is guided by five principles:
 **Area Efficiency Guide for INTVL**
 
 *From a simple GPX area calculation idea to a complete offline-first route efficiency tool — built through human-directed, AI-assisted development.*
+
+
+### v1.0.9.0 – Partial area visualization
+
+- Enclosed areas are listed by descending area (A is the largest), with matching labels on offline and OpenStreetMap views.
+- Individual enclosed-area details are collapsed by default; km² remains the default display unit and m² is available.
+- Small or crowded enclosed areas use nearby label callouts with thin leader lines when room permits. Map fills, route styles and geometry calculations are unchanged.
