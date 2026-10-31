@@ -132,57 +132,69 @@ function appendLineLegend(parent,row,language,comparisonRoutes=null){
 let comparisonMapState=null;
 let comparisonVisibilityMenuOpen=false;
 function createOsmMap(row,language,comparison=null){
- const lang=LANG[language], host=document.createElement('div');host.className='osm-map';
+ const lang=LANG[language],host=document.createElement('div');host.className='osm-map';
  const viewport=document.createElement('div');viewport.className='osm-viewport';viewport.setAttribute('aria-label',lang.osmMap);
  const tiles=document.createElement('div');tiles.className='osm-tiles';
  const overlay=document.createElementNS('http://www.w3.org/2000/svg','svg');overlay.classList.add('osm-overlay');
- viewport.append(tiles,overlay);host.append(viewport);
+ overlay.setAttribute('preserveAspectRatio','none');viewport.append(tiles,overlay);host.append(viewport);
  const controls=document.createElement('div');controls.className='osm-controls';
  const addButton=(label,action)=>{const b=document.createElement('button');b.type='button';b.className='osm-control';b.textContent=label;b.title=label;b.setAttribute('aria-label',label);b.addEventListener('click',action);controls.append(b);return b};
- const attribution=document.createElement('div');attribution.className='osm-attribution';
- const osmLink=document.createElement('a');osmLink.href='https://www.openstreetmap.org/copyright';osmLink.target='_blank';osmLink.rel='noopener noreferrer';osmLink.textContent='© OpenStreetMap';attribution.append(osmLink);host.append(controls,attribution);
- const TILE=256,MAX=19,MIN=2;
+ const attribution=document.createElement('div');attribution.className='osm-attribution';const osmLink=document.createElement('a');osmLink.href='https://www.openstreetmap.org/copyright';osmLink.target='_blank';osmLink.rel='noopener noreferrer';osmLink.textContent='© OpenStreetMap';attribution.append(osmLink);host.append(controls,attribution);
+ const TILE=256,MAX=19,MIN=2,NS='http://www.w3.org/2000/svg';
  const merc=([lon,lat])=>{const y=Math.max(-85.05112878,Math.min(85.05112878,lat))*Math.PI/180;return [(lon+180)/360,(1-Math.log(Math.tan(y)+1/Math.cos(y))/Math.PI)/2]};
- const tileNodes=new Map();let frame=0;const geo=row._geo, coords=(comparison?comparison.routes.filter(r=>comparison.visible.has(r.Datei)).flatMap(r=>r._geo):geo).map(merc);let zoom=12,cx=0,cy=0,dead=false,request=0;
+ const node=(tag,attrs)=>{const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));return e};
+ const tileNodes=new Map(),geometryCache=new Map(),markers=[];let frame=0,zoom=12,cx=0,cy=0,dead=false,drawnZoom=-1;
+ const coords=(comparison?comparison.routes.filter(r=>comparison.visible.has(r.Datei)).flatMap(r=>r._geo):row._geo).map(merc);
  const saved=comparison&&comparisonMapState&&comparisonMapState.kind==='osm'?comparisonMapState:null;
- const size=()=>[Math.max(1,viewport.clientWidth),Math.max(1,viewport.clientHeight)];
- const scale=()=>TILE*2**zoom;
- const project=p=>[(p[0]-cx)*scale()+size()[0]/2,(p[1]-cy)*scale()+size()[1]/2];
+ const size=()=>[Math.max(1,viewport.clientWidth),Math.max(1,viewport.clientHeight)];const scale=()=>TILE*2**zoom;
  const clamp=()=>{const half=size()[1]/2/scale();cy=Math.max(half,Math.min(1-half,cy));cx=((cx%1)+1)%1};
- function fit(){const visibleCoords=comparison?comparison.routes.filter(r=>comparison.visible.has(r.Datei)).flatMap(r=>r._geo).map(merc):coords;const xs=visibleCoords.map(p=>p[0]),ys=visibleCoords.map(p=>p[1]);const minx=Math.min(...xs),maxx=Math.max(...xs),miny=Math.min(...ys),maxy=Math.max(...ys);cx=(minx+maxx)/2;cy=(miny+maxy)/2;const [w,h]=size();zoom=Math.max(MIN,Math.min(17,Math.floor(Math.log2(Math.min((w-52)/(Math.max(maxx-minx,1e-8)*TILE),(h-52)/(Math.max(maxy-miny,1e-8)*TILE))))));clamp();draw()}
- function scheduleDraw(){if(!frame&&!dead)frame=requestAnimationFrame(()=>{frame=0;draw()})}
- function draw(){if(dead)return;const [w,h]=size(),s=scale();overlay.setAttribute('viewBox',`0 0 ${w} ${h}`);overlay.replaceChildren(); const left=cx*s-w/2,top=cy*s-h/2,firstX=Math.floor(left/TILE),lastX=Math.floor((left+w)/TILE),firstY=Math.floor(top/TILE),lastY=Math.floor((top+h)/TILE),n=2**zoom;
- const needed=new Set();
- for(let x=firstX-1;x<=lastX+1;x++)for(let y=firstY-1;y<=lastY+1;y++){
-  if(y<0||y>=n)continue;
-  const key=`${zoom}/${x}/${y}`;needed.add(key);
-  let img=tileNodes.get(key);
-  if(!img){img=document.createElement('img');img.alt='';img.draggable=false;img.loading='eager';img.decoding='async';img.src=`https://tile.openstreetmap.org/${zoom}/${((x%n)+n)%n}/${y}.png`;tileNodes.set(key,img);tiles.append(img)}
-  img.style.left=(x*TILE-left)+'px';img.style.top=(y*TILE-top)+'px';
- }
- for(const [key,img] of tileNodes)if(!needed.has(key)){img.remove();tileNodes.delete(key)}
- const NS='http://www.w3.org/2000/svg',node=(tag,attrs)=>{const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));return e};
+ // Ramer-Douglas-Peucker simplification affects ONLY pixels, never GPX calculations.
+ // Endpoints are always retained. Geometry is cached per route and zoom level.
+ function simplify(points,tolerance){if(points.length<=2)return points;const sq=tolerance*tolerance,keep=new Uint8Array(points.length);keep[0]=keep[points.length-1]=1;const stack=[[0,points.length-1]];
+  while(stack.length){const [a,b]=stack.pop(),p=points[a],q=points[b],dx=q[0]-p[0],dy=q[1]-p[1],len=dx*dx+dy*dy;let best=-1,index=-1;
+   for(let i=a+1;i<b;i++){const v=points[i];let t=len?((v[0]-p[0])*dx+(v[1]-p[1])*dy)/len:0;t=Math.max(0,Math.min(1,t));const x=p[0]+t*dx-v[0],y=p[1]+t*dy-v[1],d=x*x+y*y;if(d>best){best=d;index=i}}
+   if(best>sq){keep[index]=1;stack.push([a,index],[index,b])}}
+  return points.filter((_,i)=>keep[i]);}
  const inverse=p=>{const [lon0,lat0]=row._projection,xx=p[0]/R,yy=p[1]/R,rho=Math.hypot(xx,yy);if(rho<1e-12)return [lon0*180/Math.PI,lat0*180/Math.PI];const c=2*Math.asin(Math.min(1,rho/2)),lat=Math.asin(Math.cos(c)*Math.sin(lat0)+yy*Math.sin(c)*Math.cos(lat0)/rho),lon=lon0+Math.atan2(xx*Math.sin(c),rho*Math.cos(lat0)*Math.cos(c)-yy*Math.sin(lat0)*Math.sin(c));return [lon*180/Math.PI,lat*180/Math.PI]};
- const pt=p=>project(merc(inverse(p)));const d=points=>points.map((p,i)=>{const q=pt(p);return (i?'L':'M')+q[0].toFixed(2)+' '+q[1].toFixed(2)}).join(' ');
- if(!comparison)for(let i=0;i<row._rings.length;i++){const ring=row._rings[i];overlay.append(node('path',{d:d(ring)+' Z',fill:i%2?'#8fc9e4':'#82cfa0','fill-opacity':'.34',stroke:'none'}));const [x,y]=pt(interiorLabelPoint(ring));overlay.append(node('circle',{cx:x,cy:y,r:12,fill:'#fff','fill-opacity':'.9',stroke:'#176c51','stroke-width':1.5}));const text=node('text',{x,y:y+4,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#176c51'});text.textContent=faceLabel(i);overlay.append(text)}
- if(comparison){for(const r of comparison.drawOrder){const i=comparison.routes.indexOf(r);
- if(!comparison.visible.has(r.Datei))continue;
- const xy=r._geo.map(p=>project(merc(p)));const path=xy.map((p,j)=>(j?'L':'M')+p[0].toFixed(2)+' '+p[1].toFixed(2)).join(' ');
- const color=COMPARISON_COLORS[i%COMPARISON_COLORS.length],selected=comparison.highlight===r.Datei;
- overlay.append(node('path',{d:path,fill:'none',stroke:'#fff','stroke-width':selected?7:5,'stroke-opacity':selected?1:.65,'stroke-linejoin':'round','stroke-linecap':'round'}));
- overlay.append(node('path',{d:path,fill:'none',stroke:color,'stroke-width':selected?4.5:2.8,'stroke-opacity':comparison.highlight&&!selected?.35:1,'stroke-linejoin':'round','stroke-linecap':'round'}));
- if(r._closureMeters){const a=xy[xy.length-1],b=xy[0];overlay.append(node('path',{d:`M${a[0].toFixed(2)} ${a[1].toFixed(2)} L${b[0].toFixed(2)} ${b[1].toFixed(2)}`,fill:'none',stroke:color,'stroke-width':selected?3.5:2.5,'stroke-opacity':comparison.highlight&&!selected?.35:1,'stroke-dasharray':'7 5'}));}
- }}else{overlay.append(node('path',{d:d(row._xy.slice(0,-1)),fill:'none',stroke:'#fff','stroke-width':5.5,'stroke-linejoin':'round','stroke-linecap':'round'}));overlay.append(node('path',{d:d(row._xy.slice(0,-1)),fill:'none',stroke:'#176c51','stroke-width':3.3,'stroke-linejoin':'round','stroke-linecap':'round'}));if(row._closureMeters)overlay.append(node('path',{d:d([row._xy[row._xy.length-2],row._xy[0]]),fill:'none',stroke:'#df8a25','stroke-width':3,'stroke-dasharray':'7 5'}));const [sx,sy]=pt(row._xy[0]);overlay.append(node('circle',{cx:sx,cy:sy,r:6,fill:'#fff',stroke:'#176c51','stroke-width':3}));}
+ const routePoints=new Map();if(comparison){for(const r of comparison.routes)routePoints.set(r,r._geo.map(merc))}else routePoints.set(row,row._geo.map(merc));
+ const ringPoints=!comparison?row._rings.map(r=>r.map(p=>merc(inverse(p)))):[];
+ const ringLabels=!comparison?row._rings.map(r=>merc(inverse(interiorLabelPoint(r)))):[];
+ const fmt=v=>v.toFixed(9);const path=points=>points.map((p,i)=>(i?'L':'M')+fmt(p[0])+' '+fmt(p[1])).join(' ');
+ function routeGeometry(r){const key=(comparison?comparison.routes.indexOf(r):0)+'/'+zoom;if(geometryCache.has(key))return geometryCache.get(key);
+  const pts=routePoints.get(r),reduced=simplify(pts,0.65/scale()),value=path(reduced);geometryCache.set(key,value);return value;}
+ function paintGeometry(){if(dead||drawnZoom===zoom)return;drawnZoom=zoom;overlay.replaceChildren();markers.length=0;
+  const addPath=(d,attrs)=>overlay.append(node('path',{d,fill:'none','vector-effect':'non-scaling-stroke',...attrs}));
+  if(!comparison)for(let i=0;i<ringPoints.length;i++){const ring=ringPoints[i],reduced=simplify(ring,0.5/scale());overlay.append(node('path',{d:path(reduced)+' Z',fill:i%2?'#8fc9e4':'#82cfa0','fill-opacity':'.34',stroke:'none'}));
+   const [x,y]=ringLabels[i],circle=node('circle',{cx:x,cy:y,fill:'#fff','fill-opacity':'.9',stroke:'#176c51','stroke-width':1.5,'vector-effect':'non-scaling-stroke'}),text=node('text',{x,y,'text-anchor':'middle','font-weight':700,fill:'#176c51'});text.textContent=faceLabel(i);overlay.append(circle,text);markers.push({circle,text,y,r:12});}
+  if(comparison){for(const r of comparison.drawOrder){if(!comparison.visible.has(r.Datei))continue;const i=comparison.routes.indexOf(r),color=COMPARISON_COLORS[i%COMPARISON_COLORS.length],selected=comparison.highlight===r.Datei,d=routeGeometry(r);
+   addPath(d,{stroke:'#fff','stroke-width':selected?7:5,'stroke-opacity':selected?1:.65,'stroke-linejoin':'round','stroke-linecap':'round'});
+   addPath(d,{stroke:color,'stroke-width':selected?4.5:2.8,'stroke-opacity':comparison.highlight&&!selected?.35:1,'stroke-linejoin':'round','stroke-linecap':'round'});
+   if(r._closureMeters){const pts=routePoints.get(r),a=pts[pts.length-1],b=pts[0];addPath(path([a,b]),{stroke:color,'stroke-width':selected?3.5:2.5,'stroke-opacity':comparison.highlight&&!selected?.35:1,'stroke-dasharray':'7 5'});}
+  }}else{const d=routeGeometry(row);addPath(d,{stroke:'#fff','stroke-width':5.5,'stroke-linejoin':'round','stroke-linecap':'round'});addPath(d,{stroke:'#176c51','stroke-width':3.3,'stroke-linejoin':'round','stroke-linecap':'round'});
+   const pts=routePoints.get(row);if(row._closureMeters)addPath(path([pts[pts.length-1],pts[0]]),{stroke:'#df8a25','stroke-width':3,'stroke-dasharray':'7 5'});
+   const [x,y]=pts[0],circle=node('circle',{cx:x,cy:y,fill:'#fff',stroke:'#176c51','stroke-width':3,'vector-effect':'non-scaling-stroke'});overlay.append(circle);markers.push({circle,r:6});}
  }
- function zoomAt(next,x,y){const old=scale(),[w,h]=size();const anchor=[cx+(x-w/2)/old,cy+(y-h/2)/old];zoom=Math.max(MIN,Math.min(MAX,next));const s=scale();cx=anchor[0]-(x-w/2)/s;cy=anchor[1]-(y-h/2)/s;clamp();draw()}
+ function draw(){if(dead)return;const [w,h]=size(),s=scale(),left=cx*s-w/2,top=cy*s-h/2;
+  // Pan only changes the SVG viewport. Thousands of route coordinates are not rebuilt.
+  paintGeometry();overlay.setAttribute('viewBox',`${cx-w/(2*s)} ${cy-h/(2*s)} ${w/s} ${h/s}`);
+  for(const marker of markers){marker.circle.setAttribute('r',marker.r/s);if(marker.text){marker.text.setAttribute('font-size',12/s);marker.text.setAttribute('y',marker.y+4/s)}}
+  const firstX=Math.floor(left/TILE),lastX=Math.floor((left+w)/TILE),firstY=Math.floor(top/TILE),lastY=Math.floor((top+h)/TILE),n=2**zoom,needed=new Set();
+  for(let x=firstX-1;x<=lastX+1;x++)for(let y=firstY-1;y<=lastY+1;y++){if(y<0||y>=n)continue;const key=`${zoom}/${x}/${y}`;needed.add(key);let img=tileNodes.get(key);
+   if(!img){img=document.createElement('img');img.alt='';img.draggable=false;img.loading='eager';img.decoding='async';img.src=`https://tile.openstreetmap.org/${zoom}/${((x%n)+n)%n}/${y}.png`;tileNodes.set(key,img);tiles.append(img)}
+   img.style.left=(x*TILE-left)+'px';img.style.top=(y*TILE-top)+'px';}
+  for(const [key,img] of tileNodes)if(!needed.has(key)){img.remove();tileNodes.delete(key)}
+ }
+ function scheduleDraw(){if(!frame&&!dead)frame=requestAnimationFrame(()=>{frame=0;draw()})}
+ function fit(){const visibleCoords=comparison?comparison.routes.filter(r=>comparison.visible.has(r.Datei)).flatMap(r=>routePoints.get(r)):coords;if(!visibleCoords.length)return;let minx=Infinity,maxx=-Infinity,miny=Infinity,maxy=-Infinity;for(const [x,y] of visibleCoords){minx=Math.min(minx,x);maxx=Math.max(maxx,x);miny=Math.min(miny,y);maxy=Math.max(maxy,y)}cx=(minx+maxx)/2;cy=(miny+maxy)/2;const [w,h]=size();zoom=Math.max(MIN,Math.min(17,Math.floor(Math.log2(Math.min((w-52)/(Math.max(maxx-minx,1e-8)*TILE),(h-52)/(Math.max(maxy-miny,1e-8)*TILE))))));clamp();scheduleDraw()}
+ function zoomAt(next,x,y){const old=scale(),[w,h]=size(),anchor=[cx+(x-w/2)/old,cy+(y-h/2)/old];zoom=Math.max(MIN,Math.min(MAX,next));const s=scale();cx=anchor[0]-(x-w/2)/s;cy=anchor[1]-(y-h/2)/s;clamp();scheduleDraw()}
  const fitButton=addButton('⛶',fit);fitButton.title=lang.fitRoute;fitButton.setAttribute('aria-label',lang.fitRoute);
  viewport.addEventListener('wheel',e=>{e.preventDefault();const r=viewport.getBoundingClientRect();zoomAt(zoom+(e.deltaY<0?1:-1),e.clientX-r.left,e.clientY-r.top)},{passive:false});
  const pointers=new Map();let lastPinch=null;
  viewport.addEventListener('pointerdown',e=>{if(e.button!==0&&e.pointerType==='mouse')return;viewport.setPointerCapture(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);lastPinch=null});
  viewport.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;const previous=pointers.get(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);if(pointers.size===1){cx-=(e.clientX-previous[0])/scale();cy-=(e.clientY-previous[1])/scale();clamp();scheduleDraw()}else if(pointers.size===2){const a=[...pointers.values()],dist=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);if(lastPinch!==null&&dist>lastPinch*1.5){zoomAt(zoom+1,size()[0]/2,size()[1]/2);lastPinch=dist}else if(lastPinch!==null&&dist<lastPinch/1.5){zoomAt(zoom-1,size()[0]/2,size()[1]/2);lastPinch=dist}else if(lastPinch===null)lastPinch=dist}});
  for(const type of ['pointerup','pointercancel','lostpointercapture'])viewport.addEventListener(type,e=>{pointers.delete(e.pointerId);lastPinch=null});
- let fitted=false;const observer=new ResizeObserver(()=>{if(dead)return;if(viewport.clientWidth>1&&viewport.clientHeight>1){if(!fitted){fitted=true;if(saved){zoom=saved.zoom;cx=saved.cx;cy=saved.cy;clamp();draw()}else fit()}else draw()}});observer.observe(viewport);
- return {element:host,getState(){return {kind:'osm',zoom,cx,cy}},destroy(){dead=true;if(frame)cancelAnimationFrame(frame);observer.disconnect();tileNodes.clear();tiles.replaceChildren();overlay.replaceChildren()}};
+ let fitted=false;const observer=new ResizeObserver(()=>{if(dead)return;if(viewport.clientWidth>1&&viewport.clientHeight>1){if(!fitted){fitted=true;if(saved){zoom=saved.zoom;cx=saved.cx;cy=saved.cy;clamp();scheduleDraw()}else fit()}else scheduleDraw()}});observer.observe(viewport);
+ return {element:host,getState(){return {kind:'osm',zoom,cx,cy}},destroy(){dead=true;if(frame)cancelAnimationFrame(frame);observer.disconnect();tileNodes.clear();geometryCache.clear();tiles.replaceChildren();overlay.replaceChildren()}};
 }
 
 const COMPARISON_COLORS=['#2563eb','#ea580c','#16a34a','#a21caf','#dc2626','#0891b2','#b45309','#4f46e5'];
