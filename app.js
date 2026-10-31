@@ -36,24 +36,61 @@ function faceLabel(i){let result='';for(let n=i+1;n>0;n=Math.floor((n-1)/26))res
 function faceOrder(row){return (row._faceAreas||[]).map((_,i)=>i).sort((a,b)=>row._faceAreas[b]-row._faceAreas[a]||a-b)}
 function faceNames(row){const names=[];faceOrder(row).forEach((index,rank)=>names[index]=faceLabel(rank));return names}
 // Layout in screen pixels so zooming never shrinks labels or their leader lines.
-function placeFaceLabels(items,w,h){
- const placed=[],result=new Map(),radius=12,margin=15;
- const inside=(x,y)=>x>=margin&&x<=w-margin&&y>=margin&&y<=h-margin;
- const free=(x,y)=>placed.every(p=>Math.hypot(p[0]-x,p[1]-y)>=29);
- // Largest faces receive placement priority, while small faces use nearby callouts.
- for(const item of [...items].sort((a,b)=>b.area-a.area)){
+// Screen-space label placement. The route and other leader lines are obstacles,
+// while previous positions reduce distracting jumps during small map movements.
+function segmentDistanceSquared(px,py,ax,ay,bx,by){
+ const dx=bx-ax,dy=by-ay,len=dx*dx+dy*dy;
+ const t=len?Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/len)):0;
+ return (px-ax-t*dx)**2+(py-ay-t*dy)**2;
+}
+function segmentsIntersect(a,b,c,d){
+ const orient=(p,q,r)=>(q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]);
+ const o1=orient(a,b,c),o2=orient(a,b,d),o3=orient(c,d,a),o4=orient(c,d,b);
+ return o1*o2<0&&o3*o4<0;
+}
+function placeFaceLabels(items,w,h,route=[],previous=new Map()){
+ const result=new Map(),placed=[],leaders=[],margin=15,radius=12;
+ const segments=[];
+ // Discard route sections outside the viewport and skip very short subdivisions.
+ for(let i=1;i<route.length;i++){
+  const a=route[i-1],b=route[i];
+  if(Math.max(a[0],b[0]) < -45||Math.min(a[0],b[0])>w+45||Math.max(a[1],b[1]) < -45||Math.min(a[1],b[1])>h+45)continue;
+  if((a[0]-b[0])**2+(a[1]-b[1])**2<.16)continue;
+  segments.push([a,b]);
+ }
+ const routeDistance=(x,y)=>{let min=Infinity;for(const [a,b] of segments)min=Math.min(min,segmentDistanceSquared(x,y,...a,...b));return Math.sqrt(min)};
+ const candidates=[[0,0],[0,-35],[-30,-27],[30,-27],[-38,0],[38,0],[-30,28],[30,28],[0,38],[-54,-20],[54,-20],[-54,20],[54,20],[0,-55],[0,55],[-68,0],[68,0],[-76,-30],[76,-30],[-76,30],[76,30]];
+ for(const item of [...items].sort((a,b)=>b.area-a.area||a.index-b.index)){
   const {x,y,diameter}=item;
-  if(!Number.isFinite(x)||!Number.isFinite(y))continue;
-  if(x < -70||x>w+70||y < -70||y>h+70)continue;
-  let chosen=null;
-  if(diameter>=32&&inside(x,y)&&free(x,y))chosen=[x,y];
-  if(!chosen){
-   const offsets=[[-26,-29],[0,-39],[28,-28],[-38,0],[38,0],[-29,30],[0,39],[29,30],[-53,-22],[53,-22],[-53,22],[53,22],[-65,0],[65,0]];
-   for(const [dx,dy] of offsets){const nx=x+dx,ny=y+dy;if(inside(nx,ny)&&free(nx,ny)){chosen=[nx,ny];break}}
+  if(!Number.isFinite(x)||!Number.isFinite(y)||x < -85||x>w+85||y < -85||y>h+85)continue;
+  const choices=[];
+  const prev=previous.get(item.index);
+  if(prev)choices.push([prev.x-x,prev.y-y]);
+  choices.push(...candidates);
+  let best=null;
+  for(const [dx,dy] of choices){
+   const px=x+dx,py=y+dy,dist=Math.hypot(dx,dy),external=dist>3;
+   if(px<margin||px>w-margin||py<margin||py>h-margin)continue;
+   if(placed.some(p=>Math.hypot(p.x-px,p.y-py)<30))continue;
+   if(!external&&diameter<32)continue;
+   // Do not place a circle on the actual route, including its white outline.
+   const clearance=routeDistance(px,py);
+   if(clearance<radius+4)continue;
+   const edge=external?[px-dx/dist*radius,py-dy/dist*radius]:[px,py];
+   const lead=external?[[x,y],edge]:null;
+   if(lead&&leaders.some(l=>segmentsIntersect(...lead,...l)))continue;
+   // Avoid a leader line passing through an existing label.
+   if(lead&&placed.some(p=>segmentDistanceSquared(p.x,p.y,...lead[0],...lead[1])<(radius+3)**2))continue;
+   // Crossing the route is possible at the attachment point, but strongly discouraged elsewhere.
+   let crosses=0;
+   if(lead)for(const seg of segments)if(segmentsIntersect(...lead,...seg))crosses++;
+   const stability=prev?Math.hypot(prev.x-px,prev.y-py):0;
+   const score=dist*.28+crosses*65+(external?3:0)+Math.max(0,24-clearance)*2+Math.min(80,stability)*.16;
+   if(!best||score<best.score)best={x:px,y:py,external,edge,lead,score};
   }
-  // Never draw an unreadable stack of labels if no nearby location is free.
-  if(!chosen)continue;
-  placed.push(chosen);result.set(item.index,{x:chosen[0],y:chosen[1],external:Math.hypot(chosen[0]-x,chosen[1]-y)>3});
+  if(!best)continue;
+  placed.push(best);if(best.lead)leaders.push(best.lead);
+  result.set(item.index,{x:best.x,y:best.y,external:best.external,edge:best.edge});
  }
  return result;
 }
@@ -125,9 +162,10 @@ function renderRoute(row){
  const [ex,ey]=point(xy[xy.length-2]||xy[0]);svg.append(make('circle',{cx:ex,cy:ey,r:3,fill:'#176c51'}));
  const names=faceNames(row);
  const items=rings.map((ring,index)=>{const [x,y]=point(interiorLabelPoint(ring));const area=faceAreas[index]||0;return {index,x,y,area,diameter:2*Math.sqrt(area/Math.PI)*scale}});
- const positions=placeFaceLabels(items,w,h);
+ const routeScreen=xy.slice(0,-1).map(point);
+ const positions=placeFaceLabels(items,w,h,routeScreen);
  for(const item of items){const pos=positions.get(item.index);if(!pos)continue;
-  if(pos.external)svg.append(make('line',{x1:item.x,y1:item.y,x2:pos.x,y2:pos.y,stroke:'#176c51','stroke-width':1.25,'stroke-opacity':'.8'}));
+  if(pos.external)svg.append(make('line',{x1:item.x,y1:item.y,x2:pos.edge[0],y2:pos.edge[1],stroke:'#176c51','stroke-width':1.25,'stroke-opacity':'.8'}));
   svg.append(make('circle',{cx:pos.x,cy:pos.y,r:12,fill:'#fff','fill-opacity':'.92',stroke:'#176c51','stroke-width':1.4}));
   const label=make('text',{x:pos.x,y:pos.y+4,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#176c51'});label.textContent=names[item.index];svg.append(label);
  }
@@ -169,7 +207,7 @@ function createOsmMap(row,language,comparison=null){
  const TILE=256,MAX=19,MIN=2,NS='http://www.w3.org/2000/svg';
  const merc=([lon,lat])=>{const y=Math.max(-85.05112878,Math.min(85.05112878,lat))*Math.PI/180;return [(lon+180)/360,(1-Math.log(Math.tan(y)+1/Math.cos(y))/Math.PI)/2]};
  const node=(tag,attrs)=>{const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));return e};
- const tileNodes=new Map(),geometryCache=new Map(),markers=[];let frame=0,zoom=12,cx=0,cy=0,dead=false,drawnZoom=-1;
+ const tileNodes=new Map(),geometryCache=new Map(),markers=[];let lastLabelOffsets=new Map();let frame=0,zoom=12,cx=0,cy=0,dead=false,drawnZoom=-1;
  const coords=(comparison?comparison.routes.filter(r=>comparison.visible.has(r.Datei)).flatMap(r=>r._geo):row._geo).map(merc);
  const saved=comparison&&comparisonMapState&&comparisonMapState.kind==='osm'?comparisonMapState:null;
  const size=()=>[Math.max(1,viewport.clientWidth),Math.max(1,viewport.clientHeight)];const scale=()=>TILE*2**zoom;
@@ -222,7 +260,10 @@ function createOsmMap(row,language,comparison=null){
   const labelItems=markers.filter(m=>m.text).map(m=>({index:m.index,x:m.anchorX*pixelScale-viewX,y:m.anchorY*pixelScale-viewY,area:m.area,diameter:2*Math.sqrt(m.area/Math.PI)*s/R})); 
   // Area is in square metres; Web Mercator pixel size depends on latitude.
   for(const item of labelItems){const lat=row._projection[1];item.diameter=2*Math.sqrt(item.area/Math.PI)*s/(R*2*Math.PI*Math.max(.01,Math.cos(lat)));}
-  const labelPositions=placeFaceLabels(labelItems,w,h);
+  const routeScreen=!comparison?simplify(routePoints.get(row),1.5/s).map(p=>[(p[0]-cx)*s+w/2,(p[1]-cy)*s+h/2]):[];
+  const prior=new Map(labelItems.filter(item=>lastLabelOffsets.has(item.index)).map(item=>{const [dx,dy]=lastLabelOffsets.get(item.index);return [item.index,{x:item.x+dx,y:item.y+dy}]}));
+  const labelPositions=placeFaceLabels(labelItems,w,h,routeScreen,prior);
+  lastLabelOffsets=new Map(labelItems.filter(item=>labelPositions.has(item.index)).map(item=>{const pos=labelPositions.get(item.index);return [item.index,[pos.x-item.x,pos.y-item.y]]}));
   for(const marker of markers){
    if(!marker.text){marker.circle.setAttribute('r',marker.r*SVG_SCALE/s);continue}
    const pos=labelPositions.get(marker.index),visible=!!pos;
@@ -231,7 +272,7 @@ function createOsmMap(row,language,comparison=null){
    const lx=(pos.x+viewX)/pixelScale,ly=(pos.y+viewY)/pixelScale;
    marker.circle.setAttribute('cx',lx);marker.circle.setAttribute('cy',ly);marker.circle.setAttribute('r',12/pixelScale);
    marker.text.setAttribute('x',lx);marker.text.setAttribute('y',ly+4/pixelScale);marker.text.setAttribute('font-size',12/pixelScale);
-   if(pos.external){marker.leader.setAttribute('x1',marker.anchorX);marker.leader.setAttribute('y1',marker.anchorY);marker.leader.setAttribute('x2',lx);marker.leader.setAttribute('y2',ly)}
+   if(pos.external){marker.leader.setAttribute('x1',marker.anchorX);marker.leader.setAttribute('y1',marker.anchorY);marker.leader.setAttribute('x2',(pos.edge[0]+viewX)/pixelScale);marker.leader.setAttribute('y2',(pos.edge[1]+viewY)/pixelScale)}
   }
   const firstX=Math.floor(left/TILE),lastX=Math.floor((left+w)/TILE),firstY=Math.floor(top/TILE),lastY=Math.floor((top+h)/TILE),n=2**zoom,needed=new Set();
   for(let x=firstX-1;x<=lastX+1;x++)for(let y=firstY-1;y<=lastY+1;y++){if(y<0||y>=n)continue;const key=`${zoom}/${x}/${y}`;needed.add(key);let img=tileNodes.get(key);

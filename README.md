@@ -248,3 +248,10 @@ Area Efficiency Guide for INTVL is guided by five principles:
 - Enclosed areas are listed by descending area (A is the largest), with matching labels on offline and OpenStreetMap views.
 - Individual enclosed-area details are collapsed by default; km² remains the default display unit and m² is available.
 - Small or crowded enclosed areas use nearby label callouts with thin leader lines when room permits. Map fills, route styles and geometry calculations are unchanged.
+
+
+### v1.0.9.1 – Smart area label placement
+
+- Improved map label placement to avoid recorded route lines and collisions between label leaders.
+- Leader lines end at the label circle edge; previous relative positions are preferred to reduce jumping when panning.
+- Calculations, route drawing, area fill colors, and collapsed area list remain unchanged.
