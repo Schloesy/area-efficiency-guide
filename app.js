@@ -632,6 +632,10 @@ if(typeof document!=='undefined'){
  el('calc').onclick=async()=>{
   const files=selectedGpxFiles();
   if(!files.length){el('status').textContent=t().select;return}
+  // iOS can mark .gpx files unselectable when the file input has an
+  // accept filter. Validate extensions here instead of in the OS picker;
+  // readGpx() continues to validate GPX content during processing.
+  if(files.some(file=>!/\.gpx$/i.test(file.name))){el('status').textContent=t().dropInvalid;return}
   rows=[];compareVisible=new Set();compareHighlight=null;compareOpen=false;comparisonVisibilityMenuOpen=false;comparisonMapState=null;comparisonMapInstance=null;busy=true;el('calc').disabled=true;el('export').disabled=true;
   el('results').replaceChildren();
   el('status').textContent=language==='de'?'Berechnung läuft …':'Calculating …';
