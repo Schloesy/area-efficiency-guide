@@ -266,3 +266,9 @@ Area Efficiency Guide for INTVL is guided by five principles:
 - Remove the restrictive file-picker accept filter so iOS Chrome can select locally stored GPX files.
 - Validate the .gpx filename extension after selection; retain GPX content parsing and existing drag-and-drop checks.
 - Preserve multiple file selection, calculations, maps, and offline behavior.
+
+### v1.0.9.4 – Cross-platform GPX file picker
+
+- Restore the GPX file picker filter on Android and desktop.
+- Keep the picker unrestricted on iOS so GPX documents remain selectable.
+- Retain extension and content validation and all existing functionality.

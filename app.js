@@ -625,6 +625,11 @@ if(typeof document!=='undefined'){
   },{passive:true});
   panel.addEventListener('touchcancel',()=>{touchStart=null},{passive:true});
  }
+ // iOS Files may disable valid .gpx documents when accept is set.
+ // Other platforms retain the original GPX-filtered document picker.
+ const iosFilePicker=/iPad|iPhone|iPod/i.test(navigator.userAgent)||
+  (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+ if(!iosFilePicker)el('files').setAttribute('accept','.gpx,application/gpx+xml');
  el('language').addEventListener('change',e=>{language=e.target.checked?'en':'de';localStorage.setItem('intvl-language',language);render()});
  let geometryWorker=null,workerId=0;const pending=new Map();
  try{geometryWorker=new Worker('./geometry-worker.js?v=1081');geometryWorker.onmessage=e=>{const {id,result,error}=e.data;const p=pending.get(id);if(!p)return;pending.delete(id);error?p.reject(Error(error)):p.resolve(result)};geometryWorker.onerror=()=>{geometryWorker.terminate();geometryWorker=null;for(const p of pending.values())p.reject(Error('Geometry worker failed'));pending.clear()}}catch(e){geometryWorker=null}
