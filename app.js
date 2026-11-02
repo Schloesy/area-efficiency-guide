@@ -625,11 +625,12 @@ if(typeof document!=='undefined'){
   },{passive:true});
   panel.addEventListener('touchcancel',()=>{touchStart=null},{passive:true});
  }
- // iOS Files may disable valid .gpx documents when accept is set.
+ // Test a generic binary-document filter on iOS to discourage camera/media
+ // actions without restoring the restrictive GPX filter. Browser UI varies.
  // Other platforms retain the original GPX-filtered document picker.
  const iosFilePicker=/iPad|iPhone|iPod/i.test(navigator.userAgent)||
   (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
- if(!iosFilePicker)el('files').setAttribute('accept','.gpx,application/gpx+xml');
+ el('files').setAttribute('accept',iosFilePicker?'application/octet-stream':'.gpx,application/gpx+xml');
  el('language').addEventListener('change',e=>{language=e.target.checked?'en':'de';localStorage.setItem('intvl-language',language);render()});
  let geometryWorker=null,workerId=0;const pending=new Map();
  try{geometryWorker=new Worker('./geometry-worker.js?v=1081');geometryWorker.onmessage=e=>{const {id,result,error}=e.data;const p=pending.get(id);if(!p)return;pending.delete(id);error?p.reject(Error(error)):p.resolve(result)};geometryWorker.onerror=()=>{geometryWorker.terminate();geometryWorker=null;for(const p of pending.values())p.reject(Error('Geometry worker failed'));pending.clear()}}catch(e){geometryWorker=null}
@@ -637,8 +638,7 @@ if(typeof document!=='undefined'){
  el('calc').onclick=async()=>{
   const files=selectedGpxFiles();
   if(!files.length){el('status').textContent=t().select;return}
-  // iOS can mark .gpx files unselectable when the file input has an
-  // accept filter. Validate extensions here instead of in the OS picker;
+  // Validate extensions after selection regardless of the platform picker;
   // readGpx() continues to validate GPX content during processing.
   if(files.some(file=>!/\.gpx$/i.test(file.name))){el('status').textContent=t().dropInvalid;return}
   rows=[];compareVisible=new Set();compareHighlight=null;compareOpen=false;comparisonVisibilityMenuOpen=false;comparisonMapState=null;comparisonMapInstance=null;busy=true;el('calc').disabled=true;el('export').disabled=true;

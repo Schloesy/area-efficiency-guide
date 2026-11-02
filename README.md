@@ -272,3 +272,9 @@ Area Efficiency Guide for INTVL is guided by five principles:
 - Restore the GPX file picker filter on Android and desktop.
 - Keep the picker unrestricted on iOS so GPX documents remain selectable.
 - Retain extension and content validation and all existing functionality.
+
+### v1.0.9.5 – iOS file picker test
+
+- Experiment with `application/octet-stream` as the iOS file picker filter to reduce irrelevant camera and photo choices.
+- Keep Android/desktop GPX filtering and GPX validation unchanged.
+- Experimental: verify GPX selection on iOS before replacing stable v1.0.9.4.
