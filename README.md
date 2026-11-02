@@ -278,3 +278,9 @@ Area Efficiency Guide for INTVL is guided by five principles:
 - Experiment with `application/octet-stream` as the iOS file picker filter to reduce irrelevant camera and photo choices.
 - Keep Android/desktop GPX filtering and GPX validation unchanged.
 - Experimental: verify GPX selection on iOS before replacing stable v1.0.9.4.
+
+### v1.0.9.6 – Automatic initial language selection
+
+- On first visit, choose German for German browser language preferences and English otherwise.
+- Keep manually selected German or English stored in localStorage and always prioritize it on later visits.
+- Preserve the cross-platform GPX picker and all other features.

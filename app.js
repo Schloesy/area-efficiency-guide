@@ -341,7 +341,13 @@ function translateError(message,lang){const t=LANG[lang],parts=String(message).s
 if(typeof module!=='undefined')module.exports={evaluate,facesArea,translateError};
 if(typeof document!=='undefined'){
  const el=id=>document.getElementById(id);
- let language=localStorage.getItem('intvl-language')==='en'?'en':'de',rows=[],busy=false,activeView='gpx',areaUnit='km2',osmEnabled=false,activeMaps=[],compareMetric='efficiency',compareVisible=new Set(),compareHighlight=null,compareOpen=false,compareAreaUnit='km2',comparisonMapInstance=null;
+ // A saved manual preference always wins. Otherwise detect the browser's
+ // first preferred language; unsupported languages fall back to English.
+ const savedLanguage=localStorage.getItem('intvl-language');
+ const preferredLanguage=(navigator.languages&&navigator.languages[0])||navigator.language||'en';
+ let language=(savedLanguage==='de'||savedLanguage==='en')
+  ?savedLanguage
+  :(/^de(?:-|$)/i.test(preferredLanguage)?'de':'en'),rows=[],busy=false,activeView='gpx',areaUnit='km2',osmEnabled=false,activeMaps=[],compareMetric='efficiency',compareVisible=new Set(),compareHighlight=null,compareOpen=false,compareAreaUnit='km2',comparisonMapInstance=null;
  function setAreaUnit(unit){
   if(unit!=='km2'&&unit!=='m2')return;
   areaUnit=unit;
