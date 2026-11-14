@@ -145,13 +145,23 @@ function visualAreaAnchor(ring){
  if(best)return best.point;
  return interiorLabelPoint(ring);
 }
-function renderFaceDetails(row,lang,fmt,unit,onUnitChange){
+const MILES_PER_KM=0.621371192237334;
+const SQ_MILES_PER_SQ_KM=MILES_PER_KM*MILES_PER_KM;
+const SQ_FEET_PER_SQ_METER=10.763910416709722;
+function detectedDistanceUnit(){
+ const locale=(navigator.languages&&navigator.languages[0])||navigator.language||'';
+ // Region subtags are more reliable than language alone. Do not infer
+ // imperial units from an unqualified English browser language.
+ const region=locale.match(/(?:^|[-_])([A-Za-z]{2}|[0-9]{3})(?:$|[-_])/);
+ return region&&['US','GB','LR','MM'].includes(region[1].toUpperCase())?'mi':'km';
+}
+function renderFaceDetails(row,lang,fmt,unit,onUnitChange,distanceUnit){
  const section=document.createElement('details');section.className='face-details';
  const head=document.createElement('summary');head.className='face-header';
  const heading=document.createElement('h4');heading.textContent=lang.faceBreakdown+' ('+row._faceAreas.length+')';head.append(heading);section.append(head);
  const content=document.createElement('div');content.className='face-content';
  const control=document.createElement('div');control.className='unit-control';control.setAttribute('role','group');control.setAttribute('aria-label',lang.areaUnit);
- for(const [value,label] of [['km2','km²'],['m2','m²']]){
+ for(const [value,label] of (distanceUnit==='mi'?[['km2','mi²'],['m2','ft²']]:[['km2','km²'],['m2','m²']])){
   const button=document.createElement('button');button.type='button';button.className='unit-button'+(unit===value?' active':'');button.textContent=label;button.setAttribute('aria-pressed',String(unit===value));
   button.dataset.unit=value;button.addEventListener('click',()=>onUnitChange(value));
   control.append(button);
@@ -166,11 +176,11 @@ function renderFaceDetails(row,lang,fmt,unit,onUnitChange){
  name.textContent=lang.faceSum;value.dataset.areaM2=String((row._faceAreas||[]).reduce((a,b)=>a+b,0));tr.append(name,value);tbody.append(tr);
  table.append(tbody);content.append(table);
  const note=document.createElement('p');note.className='small';note.textContent=lang.faceNote;content.append(note);section.append(content);
- updateFaceUnits(section,unit,fmt);return section;
+ updateFaceUnits(section,unit,fmt,distanceUnit);return section;
 }
-function updateFaceUnits(section,unit,fmt){
+function updateFaceUnits(section,unit,fmt,distanceUnit){
  for(const cell of section.querySelectorAll('[data-area-m2]')){
-  const area=Number(cell.dataset.areaM2);cell.textContent=unit==='km2'?fmt(area/1e6,2)+' km²':fmt(area,2)+' m²';
+  const area=Number(cell.dataset.areaM2);cell.textContent=distanceUnit==='mi'?(unit==='km2'?fmt(area/1e6*SQ_MILES_PER_SQ_KM,2)+' mi²':fmt(area*SQ_FEET_PER_SQ_METER,2)+' ft²'):(unit==='km2'?fmt(area/1e6,2)+' km²':fmt(area,2)+' m²');
  }
  for(const button of section.querySelectorAll('.unit-button')){
   const selected=button.dataset.unit===unit;
@@ -348,10 +358,14 @@ if(typeof document!=='undefined'){
  let language=(savedLanguage==='de'||savedLanguage==='en')
   ?savedLanguage
   :(/^de(?:-|$)/i.test(preferredLanguage)?'de':'en'),rows=[],busy=false,activeView='gpx',areaUnit='km2',osmEnabled=false,activeMaps=[],compareMetric='efficiency',compareVisible=new Set(),compareHighlight=null,compareOpen=false,compareAreaUnit='km2',comparisonMapInstance=null;
+ const storedDistanceUnit=localStorage.getItem('intvl-distance-unit');
+ let distanceUnit=['km','mi'].includes(storedDistanceUnit)?storedDistanceUnit:detectedDistanceUnit();
+ const lengthText=km=>fmt(distanceUnit==='mi'?km*MILES_PER_KM:km,2)+' '+distanceUnit;
+ const areaText=km2=>fmt(distanceUnit==='mi'?km2*SQ_MILES_PER_SQ_KM:km2,2)+' '+(distanceUnit==='mi'?'mi²':'km²');
  function setAreaUnit(unit){
   if(unit!=='km2'&&unit!=='m2')return;
   areaUnit=unit;
-  document.querySelectorAll('.face-details').forEach(section=>updateFaceUnits(section,areaUnit,fmt));
+  document.querySelectorAll('.face-details').forEach(section=>updateFaceUnits(section,areaUnit,fmt,distanceUnit));
  }
  const themeSelect=el('themeMode');
  const storedTheme=localStorage.getItem('intvl-theme');
@@ -369,10 +383,13 @@ if(typeof document!=='undefined'){
  const t=()=>LANG[language],fmt=(x,n)=>Number(x).toLocaleString(language==='de'?'de-DE':'en-GB',{minimumFractionDigits:n,maximumFractionDigits:n});
  const render=()=>{
   el('language').checked=language==='en';document.documentElement.lang=language;
+  el('distanceUnit').value=distanceUnit;el('distanceUnit').setAttribute('aria-label',language==='de'?'Streckeneinheit':'Distance unit');el('distanceUnitLabel').textContent=language==='de'?'Einheit':'Units';
   el('themeLabel').textContent=t().themeLabel;themeSelect.setAttribute('aria-label',t().themeLabel);
   for(const [value,key] of [['system','themeSystem'],['light','themeLight'],['dark','themeDark']])Array.from(themeSelect.options).find(option=>option.value===value).textContent=t()[key];
   for(const [id,key] of Object.entries({heading:'title',intro:'intro',calc:'calc',export:'csv',resultHeading:'results',footerText:'footer'}))el(id).textContent=t()[key];
   for(const [id,key] of Object.entries({tabGpx:'tabGpx',tabManual:'tabManual',manualHeading:'manualHeading',manualIntro:'manualIntro',manualLengthLabel:'manualLength',manualAreaLabel:'manualArea'}))el(id).textContent=t()[key];
+  el('manualLengthLabel').textContent=t().manualLength.replace('(km)','('+distanceUnit+')');
+  el('manualAreaLabel').textContent=t().manualArea.replace('(km²)','('+(distanceUnit==='mi'?'mi²':'km²')+')');
   el('compareToggle').textContent=compareOpen?t().compareClose:t().compareButton;el('compareToggle').disabled=rows.filter(r=>r.Strecke_km!==undefined&&r.Teilflaechen>0).length<2;el('compareToggle').setAttribute('aria-expanded',String(compareOpen));
   el('osmToggle').textContent=osmEnabled?t().osmOff:t().osmOn;el('osmToggle').setAttribute('aria-pressed',String(osmEnabled));el('osmInfo').textContent=t().osmInfo;
   el('results').dataset.empty=t().empty;el('filePickerLabel').textContent=t().chooseFiles;updateFileSelection();
@@ -389,8 +406,8 @@ if(typeof document!=='undefined'){
   for(const row of orderedRows){const div=document.createElement('div');div.className='route';div.dataset.rowIndex=String(rows.indexOf(row));const title=document.createElement('h3');title.textContent=row.Datei;
    if(comparisonActive&&comparisonEligible.includes(row)){title.classList.add('comparison-marked-title');title.style.setProperty('--route-color',COMPARISON_COLORS[comparisonEligible.indexOf(row)%COMPARISON_COLORS.length]);}
    div.append(title);
-   if(row.Strecke_km!==undefined){try{const mapSlot=document.createElement('div');if(osmEnabled){const m=createOsmMap(row,language);activeMaps.push(m);const mapFrame=document.createElement('div');mapFrame.className='route-map osm-route-frame';mapFrame.append(m.element);appendLineLegend(mapFrame,row,language);mapSlot.append(mapFrame)}else mapSlot.append(renderRoute(row));div.append(mapSlot)}catch(e){const warning=document.createElement('p');warning.className='small error';warning.textContent='Route display: '+e.message;div.append(warning)}const stats=document.createElement('div');stats.className='stats';for(const [label,value] of [[t().distance,fmt(row.Strecke_km,2)+' km'],[t().area,fmt(row.Flaeche_km2,2)+' km²'],[t().circle,fmt(row.Kreis_Effizienz_Prozent,2)+' %'],[t().square,fmt(row.Quadrat_Effizienz_Prozent,2)+' %']]){const box=document.createElement('div'),small=document.createElement('span'),strong=document.createElement('strong');box.className='stat';small.textContent=label;strong.textContent=value;box.append(small,strong);if(label===t().circle||label===t().square){const max=document.createElement('span');const ideal=row.Strecke_km**2/(label===t().circle?4*Math.PI:16);max.textContent=t().maxArea+fmt(ideal,2)+' km²';box.append(max)}stats.append(box)}div.append(stats);if(row._closureMeters){const notice=document.createElement('p');notice.className='small closure-notice';notice.append(document.createTextNode(t().autoClosed+' '));const meters=document.createElement('strong');meters.className='closure-distance';meters.textContent=fmt(row._closureMeters,2)+' m';notice.append(meters);div.append(notice)}
-   if(row._faceAreas&&row._faceAreas.length)div.append(renderFaceDetails(row,t(),fmt,areaUnit,setAreaUnit))}
+   if(row.Strecke_km!==undefined){try{const mapSlot=document.createElement('div');if(osmEnabled){const m=createOsmMap(row,language);activeMaps.push(m);const mapFrame=document.createElement('div');mapFrame.className='route-map osm-route-frame';mapFrame.append(m.element);appendLineLegend(mapFrame,row,language);mapSlot.append(mapFrame)}else mapSlot.append(renderRoute(row));div.append(mapSlot)}catch(e){const warning=document.createElement('p');warning.className='small error';warning.textContent='Route display: '+e.message;div.append(warning)}const stats=document.createElement('div');stats.className='stats';for(const [label,value] of [[t().distance,lengthText(row.Strecke_km)],[t().area,areaText(row.Flaeche_km2)],[t().circle,fmt(row.Kreis_Effizienz_Prozent,2)+' %'],[t().square,fmt(row.Quadrat_Effizienz_Prozent,2)+' %']]){const box=document.createElement('div'),small=document.createElement('span'),strong=document.createElement('strong');box.className='stat';small.textContent=label;strong.textContent=value;box.append(small,strong);if(label===t().circle||label===t().square){const max=document.createElement('span');const ideal=row.Strecke_km**2/(label===t().circle?4*Math.PI:16);max.textContent=t().maxArea+areaText(ideal);box.append(max)}stats.append(box)}div.append(stats);if(row._closureMeters){const notice=document.createElement('p');notice.className='small closure-notice';notice.append(document.createTextNode(t().autoClosed+' '));const meters=document.createElement('strong');meters.className='closure-distance';meters.textContent=fmt(distanceUnit==='mi'?row._closureMeters*3.280839895:row._closureMeters,2)+(distanceUnit==='mi'?' ft':' m');notice.append(meters);div.append(notice)}
+   if(row._faceAreas&&row._faceAreas.length)div.append(renderFaceDetails(row,t(),fmt,areaUnit,setAreaUnit,distanceUnit))}
    if(row.Strecke_km===undefined||!row.Teilflaechen){const info=document.createElement('p');info.className=row.Strecke_km===undefined?'small error':'small';info.textContent=row.Strecke_km===undefined?t().error+': '+translateError(row._error,language):t().noFaces;div.append(info)}results.append(div);
   }
  };
@@ -433,17 +450,17 @@ if(typeof document!=='undefined'){
   mobileSort.append(sortTrigger,sortPanel);toolbar.append(mobileSort);
   document.addEventListener('pointerdown',function closeSortOnOutside(e){if(!mobileSort.isConnected){document.removeEventListener('pointerdown',closeSortOnOutside);return}if(!mobileSort.contains(e.target)){sortPanel.hidden=true;sortTrigger.setAttribute('aria-expanded','false')}}, {passive:true});
   const units=document.createElement('div');units.className='unit-control';units.setAttribute('aria-label',t().areaUnit);
-  for(const [value,label] of [['km2','km²'],['m2','m²']]){const btn=document.createElement('button');btn.type='button';btn.className='unit-button'+(compareAreaUnit===value?' active':'');btn.textContent=label;btn.setAttribute('aria-pressed',String(compareAreaUnit===value));btn.addEventListener('click',()=>{compareAreaUnit=value;renderComparison()});units.append(btn)}
+  for(const [value,label] of (distanceUnit==='mi'?[['km2','mi²'],['m2','ft²']]:[['km2','km²'],['m2','m²']])){const btn=document.createElement('button');btn.type='button';btn.className='unit-button'+(compareAreaUnit===value?' active':'');btn.textContent=label;btn.setAttribute('aria-pressed',String(compareAreaUnit===value));btn.addEventListener('click',()=>{compareAreaUnit=value;renderComparison()});units.append(btn)}
   toolbar.append(units);host.append(toolbar);
   const sorted=[...valid].sort((a,b)=>compareMetric==='area'?b.Flaeche_km2-a.Flaeche_km2:compareMetric==='length'?b.Strecke_km-a.Strecke_km:b.Kreis_Effizienz_Prozent-a.Kreis_Effizienz_Prozent);
   const drawOrder=[...sorted].reverse().sort((a,b)=>Number(a.Datei===compareHighlight)-Number(b.Datei===compareHighlight));
-  const areaText=r=>compareAreaUnit==='km2'?fmt(r.Flaeche_km2,2)+' km²':fmt(r.Flaeche_km2*1e6,2)+' m²';
+  const comparisonAreaText=r=>distanceUnit==='mi'?(compareAreaUnit==='km2'?fmt(r.Flaeche_km2*SQ_MILES_PER_SQ_KM,2)+' mi²':fmt(r.Flaeche_km2*1e6*SQ_FEET_PER_SQ_METER,2)+' ft²'):(compareAreaUnit==='km2'?fmt(r.Flaeche_km2,2)+' km²':fmt(r.Flaeche_km2*1e6,2)+' m²');
   const table=document.createElement('table');table.className='compare-table';const head=document.createElement('thead'),hr=document.createElement('tr');
-  for(const label of ['#',t().compareRoute,t().distance+' (km)',t().area+' ('+(compareAreaUnit==='km2'?'km²':'m²')+')',t().compareEfficiency+' (%)']){const th=document.createElement('th');th.textContent=label;hr.append(th)}head.append(hr);table.append(head);
+  for(const label of ['#',t().compareRoute,t().distance+' ('+distanceUnit+')',t().area+' ('+(compareAreaUnit==='km2'?(distanceUnit==='mi'?'mi²':'km²'):(distanceUnit==='mi'?'ft²':'m²'))+')',t().compareEfficiency+' (%)']){const th=document.createElement('th');th.textContent=label;hr.append(th)}head.append(hr);table.append(head);
   const body=document.createElement('tbody');
   for(const [rank,r] of sorted.entries()){
    const tr=document.createElement('tr');const color=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];
-   for(const [i,value] of [String(rank+1),r.Datei,fmt(r.Strecke_km,2),areaText(r),fmt(r.Kreis_Effizienz_Prozent,2)+' %'].entries()){
+   for(const [i,value] of [String(rank+1),r.Datei,fmt(distanceUnit==='mi'?r.Strecke_km*MILES_PER_KM:r.Strecke_km,2),comparisonAreaText(r),fmt(r.Kreis_Effizienz_Prozent,2)+' %'].entries()){
     const td=document.createElement('td');td.textContent=value;if(i===1){td.className='compare-name';td.style.borderLeft='5px solid '+color}if(rank===0&&i===(compareMetric==='area'?3:compareMetric==='length'?2:4))td.classList.add('compare-best');tr.append(td)
    }body.append(tr);
   }table.append(body);const scroll=document.createElement('div');scroll.className='compare-scroll';scroll.append(table);host.append(scroll);
@@ -452,7 +469,7 @@ if(typeof document!=='undefined'){
    const card=document.createElement('article');card.className='compare-card';card.style.borderLeftColor=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];
    const name=document.createElement('strong');name.className='compare-card-name';name.textContent='#'+(rank+1)+' · '+r.Datei;card.append(name);
    const metrics=document.createElement('div');metrics.className='compare-card-metrics';
-   for(const [metricIndex,[label,value]] of [[t().distance,fmt(r.Strecke_km,2)+' km'],[t().area,areaText(r)],[t().compareEfficiency,fmt(r.Kreis_Effizienz_Prozent,2)+' %']].entries()){
+   for(const [metricIndex,[label,value]] of [[t().distance,lengthText(r.Strecke_km)],[t().area,comparisonAreaText(r)],[t().compareEfficiency,fmt(r.Kreis_Effizienz_Prozent,2)+' %']].entries()){
     const item=document.createElement('div'),caption=document.createElement('span'),number=document.createElement('strong');caption.textContent=label;number.textContent=value;if(rank===0&&metricIndex===(compareMetric==='area'?1:compareMetric==='length'?0:2))number.classList.add('compare-best');item.append(caption,number);metrics.append(item)
    }card.append(metrics);cards.append(card);
   }host.append(cards);
@@ -593,7 +610,7 @@ if(typeof document!=='undefined'){
   const circle=length*length/(4*Math.PI),square=length*length/16;
   for(const [label,value] of [[t().circle,fmt(area/circle*100,2)+' %'],[t().square,fmt(area/square*100,2)+' %']]){
    const box=document.createElement('div'),small=document.createElement('span'),strong=document.createElement('strong');
-   box.className='stat';small.textContent=label;strong.textContent=value;box.append(small,strong);if(label===t().circle||label===t().square){const max=document.createElement('span');max.textContent=t().maxArea+fmt(label===t().circle?circle:square,2)+' km²';box.append(max)}result.append(box);
+   box.className='stat';small.textContent=label;strong.textContent=value;box.append(small,strong);if(label===t().circle||label===t().square){const max=document.createElement('span');max.textContent=t().maxArea+fmt(label===t().circle?circle:square,2)+' '+(distanceUnit==='mi'?'mi²':'km²');box.append(max)}result.append(box);
   }
   if(area>circle*(1+1e-10)){warn.textContent=t().manualWarning;warn.hidden=false}
  }
@@ -637,6 +654,18 @@ if(typeof document!=='undefined'){
  const iosFilePicker=/iPad|iPhone|iPod/i.test(navigator.userAgent)||
   (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
  el('files').setAttribute('accept',iosFilePicker?'application/octet-stream':'.gpx,application/gpx+xml');
+ el('distanceUnit').addEventListener('change',e=>{
+  const next=e.target.value;
+  if(!['km','mi'].includes(next)||next===distanceUnit)return;
+  // Keep existing manual inputs physically equivalent when switching units.
+  const factor=next==='mi'?MILES_PER_KM:1/MILES_PER_KM;
+  for(const [id,multiplier] of [['manualLength',factor],['manualArea',factor*factor]]){
+   const input=el(id),raw=input.value.trim().replace(',','.');
+   if(raw&&Number.isFinite(Number(raw))&&Number(raw)>=0)
+    input.value=String(Number((Number(raw)*multiplier).toPrecision(12)));
+  }
+  distanceUnit=next;localStorage.setItem('intvl-distance-unit',next);render();
+ });
  el('language').addEventListener('change',e=>{language=e.target.checked?'en':'de';localStorage.setItem('intvl-language',language);render()});
  let geometryWorker=null,workerId=0;const pending=new Map();
  try{geometryWorker=new Worker('./geometry-worker.js?v=1081');geometryWorker.onmessage=e=>{const {id,result,error}=e.data;const p=pending.get(id);if(!p)return;pending.delete(id);error?p.reject(Error(error)):p.resolve(result)};geometryWorker.onerror=()=>{geometryWorker.terminate();geometryWorker=null;for(const p of pending.values())p.reject(Error('Geometry worker failed'));pending.clear()}}catch(e){geometryWorker=null}
@@ -665,7 +694,7 @@ if(typeof document!=='undefined'){
    }
   }
  };
- el('export').onclick=()=>{const text='\ufeff'+FIELDS.join(';')+'\r\n'+rows.map(row=>FIELDS.map(k=>{let v=row[k]??(k==='Status'&&row._error?translateError(row._error,language):'');if(typeof v==='number')v=String(v).replace('.',',');if(k==='Status'&&row.Strecke_km===undefined)v=t().error+': '+translateError(row._error,language);v=String(v);return '"'+v.replaceAll('"','""')+'"'}).join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='intvl_ergebnisse.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+ el('export').onclick=()=>{const csvFields=FIELDS.map(k=>distanceUnit==='mi'?k.replace('_km2','_mi2').replace('_km','_mi').replace('Start_Ziel_Abstand_m','Start_Ziel_Abstand_ft'):k);const text='\ufeff'+csvFields.join(';')+'\r\n'+rows.map(row=>FIELDS.map(k=>{let v=row[k]??(k==='Status'&&row._error?translateError(row._error,language):'');if(distanceUnit==='mi'&&typeof v==='number'){if(k==='Strecke_km')v*=MILES_PER_KM;if(k.endsWith('_km2'))v*=SQ_MILES_PER_SQ_KM;if(k==='Start_Ziel_Abstand_m')v*=3.280839895;}if(typeof v==='number')v=String(v).replace('.',',');if(k==='Status'&&row.Strecke_km===undefined)v=t().error+': '+translateError(row._error,language);v=String(v);return '"'+v.replaceAll('"','""')+'"'}).join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='intvl_ergebnisse.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
  let waitingWorker=null;
  const showUpdate=worker=>{waitingWorker=worker;el('updateBox').hidden=false};
  el('updateButton').onclick=()=>{if(waitingWorker)waitingWorker.postMessage({type:'SKIP_WAITING'})};
