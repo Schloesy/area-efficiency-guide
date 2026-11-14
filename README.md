@@ -327,3 +327,11 @@ Area Efficiency Guide for INTVL is guided by five principles:
 - Enlarged the mobile comparison metric values while keeping all four metrics on one row.
 - Updated service-worker cache and app asset version to ensure the corrected six-column desktop table is loaded instead of a stale cached version.
 - No changes to GPX geometry, calculations or sorting.
+
+
+## v1.0.9.9 – Spanish language support
+
+- Added Spanish (es) translations for the application interface and errors.
+- Replaced the German/English language slider with a three-language dropdown.
+- Added first-visit Spanish browser-language detection, retaining manually saved language preferences.
+- Preserved existing calculations, distance-unit detection and offline support.
