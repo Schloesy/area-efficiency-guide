@@ -459,7 +459,7 @@ if(typeof document!=='undefined'){
   const drawOrder=[...sorted].reverse().sort((a,b)=>Number(a.Datei===compareHighlight)-Number(b.Datei===compareHighlight));
   const comparisonAreaText=r=>distanceUnit==='mi'?(compareAreaUnit==='km2'?fmt(r.Flaeche_km2*SQ_MILES_PER_SQ_KM,2)+' mi²':fmt(r.Flaeche_km2*1e6*SQ_FEET_PER_SQ_METER,2)+' ft²'):(compareAreaUnit==='km2'?fmt(r.Flaeche_km2,2)+' km²':fmt(r.Flaeche_km2*1e6,2)+' m²');
   const table=document.createElement('table');table.className='compare-table';const head=document.createElement('thead'),hr=document.createElement('tr');
-  for(const label of ['#',t().compareRoute,t().distance+' ('+distanceUnit+')',t().factorShort,t().area+' ('+(compareAreaUnit==='km2'?(distanceUnit==='mi'?'mi²':'km²'):(distanceUnit==='mi'?'ft²':'m²'))+')',t().compareEfficiency+' (%)',t().areaFactor]){const th=document.createElement('th');th.textContent=label;hr.append(th)}head.append(hr);table.append(head);
+  for(const label of ['#',t().compareRoute,t().distance+' ('+distanceUnit+')',t().factorShort,t().area+' ('+(compareAreaUnit==='km2'?(distanceUnit==='mi'?'mi²':'km²'):(distanceUnit==='mi'?'ft²':'m²'))+')',t().compareEfficiency+' (%)']){const th=document.createElement('th');th.textContent=label;hr.append(th)}head.append(hr);table.append(head);
   const body=document.createElement('tbody');
   for(const [rank,r] of sorted.entries()){
    const tr=document.createElement('tr');const color=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];
@@ -472,7 +472,7 @@ if(typeof document!=='undefined'){
    const card=document.createElement('article');card.className='compare-card';card.style.borderLeftColor=COMPARISON_COLORS[valid.indexOf(r)%COMPARISON_COLORS.length];
    const name=document.createElement('strong');name.className='compare-card-name';name.textContent='#'+(rank+1)+' · '+r.Datei;card.append(name);
    const metrics=document.createElement('div');metrics.className='compare-card-metrics';
-   for(const [metricIndex,[label,value]] of [[t().distance,lengthText(r.Strecke_km)],[t().factorShort,fmt(areaFactor(r),2)+'×'],[t().area,comparisonAreaText(r)],[t().compareEfficiency,fmt(r.Kreis_Effizienz_Prozent,2)+' %']].entries()){
+   for(const [metricIndex,[label,value]] of [[t().distance,lengthText(r.Strecke_km)],[t().factorShort,fmt(areaFactor(r),2)+'×'],[t().area,comparisonAreaText(r)],[language==='de'?'Kreis-Eff.':'Circle eff.',fmt(r.Kreis_Effizienz_Prozent,2)+' %']].entries()){
     const item=document.createElement('div'),caption=document.createElement('span'),number=document.createElement('strong');caption.textContent=label;number.textContent=value;if(rank===0&&metricIndex===(compareMetric==='area'?2:compareMetric==='length'?0:compareMetric==='factor'?1:3))number.classList.add('compare-best');item.append(caption,number);metrics.append(item)
    }card.append(metrics);cards.append(card);
   }host.append(cards);

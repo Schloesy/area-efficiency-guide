@@ -321,3 +321,9 @@ Area Efficiency Guide for INTVL is guided by five principles:
 - Mobile comparison displays distance, factor, area, and abbreviated circle efficiency on one row.
 - Removed the leftover empty area-factor table header on desktop.
 - No changes to calculation logic or factor sorting.
+
+
+## v1.0.9.8.3 – Comparison readability
+- Enlarged the mobile comparison metric values while keeping all four metrics on one row.
+- Updated service-worker cache and app asset version to ensure the corrected six-column desktop table is loaded instead of a stale cached version.
+- No changes to GPX geometry, calculations or sorting.
