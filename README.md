@@ -335,3 +335,10 @@ Area Efficiency Guide for INTVL is guided by five principles:
 - Replaced the German/English language slider with a three-language dropdown.
 - Added first-visit Spanish browser-language detection, retaining manually saved language preferences.
 - Preserved existing calculations, distance-unit detection and offline support.
+
+
+## v1.0.9.9.1 – Settings UI refinement
+
+- Matched the language dropdown styling to the theme dropdown, including dark mode.
+- Visually hid the unit, theme, and language labels while retaining accessible labels for assistive technology.
+- Kept unit, theme, language selection and saved preferences unchanged.
