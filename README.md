@@ -306,3 +306,10 @@ Area Efficiency Guide for INTVL is guided by five principles:
 - Adds factor sorting to desktop and mobile comparison, and factor values in comparison table/cards.
 - Adds factor to route results, manual calculator, and CSV exports.
 - Uses fixed km-based factor regardless of the chosen distance display unit.
+
+
+## v1.0.9.8.1 – Area factor layout
+
+- Place the factor between distance and area in results and comparison views.
+- Shorten the comparison column label to Faktor / Factor for narrow screens.
+- Preserve factor sorting and highlighting in desktop and mobile views.
