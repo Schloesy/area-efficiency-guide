@@ -298,3 +298,11 @@ Area Efficiency Guide for INTVL is guided by five principles:
 
 - Replaced the km/mi dropdown with a matching accessible toggle slider next to the existing language toggle.
 - Preserved automatic region detection, saved preferences, unit conversion, and all calculation logic.
+
+
+## v1.0.9.8 – Area factor
+
+- Adds area factor (enclosed km² / route km), formatted to two decimals with ×.
+- Adds factor sorting to desktop and mobile comparison, and factor values in comparison table/cards.
+- Adds factor to route results, manual calculator, and CSV exports.
+- Uses fixed km-based factor regardless of the chosen distance display unit.
