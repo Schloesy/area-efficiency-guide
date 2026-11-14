@@ -313,3 +313,11 @@ Area Efficiency Guide for INTVL is guided by five principles:
 - Place the factor between distance and area in results and comparison views.
 - Shorten the comparison column label to Faktor / Factor for narrow screens.
 - Preserve factor sorting and highlighting in desktop and mobile views.
+
+
+## v1.0.9.8.2 – Compact results and comparison layout
+
+- Results use three cards on the first row (distance, factor, area), two on the second (circle and square efficiency), on mobile and desktop.
+- Mobile comparison displays distance, factor, area, and abbreviated circle efficiency on one row.
+- Removed the leftover empty area-factor table header on desktop.
+- No changes to calculation logic or factor sorting.
