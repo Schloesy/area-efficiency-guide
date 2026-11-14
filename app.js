@@ -383,7 +383,7 @@ if(typeof document!=='undefined'){
  const t=()=>LANG[language],fmt=(x,n)=>Number(x).toLocaleString(language==='de'?'de-DE':'en-GB',{minimumFractionDigits:n,maximumFractionDigits:n});
  const render=()=>{
   el('language').checked=language==='en';document.documentElement.lang=language;
-  el('distanceUnit').value=distanceUnit;el('distanceUnit').setAttribute('aria-label',language==='de'?'Streckeneinheit':'Distance unit');el('distanceUnitLabel').textContent=language==='de'?'Einheit':'Units';
+  el('distanceUnit').checked=distanceUnit==='mi';el('distanceUnit').setAttribute('aria-label',language==='de'?'Streckeneinheit':'Distance unit');el('distanceUnitLabel').textContent=language==='de'?'Einheit':'Units';
   el('themeLabel').textContent=t().themeLabel;themeSelect.setAttribute('aria-label',t().themeLabel);
   for(const [value,key] of [['system','themeSystem'],['light','themeLight'],['dark','themeDark']])Array.from(themeSelect.options).find(option=>option.value===value).textContent=t()[key];
   for(const [id,key] of Object.entries({heading:'title',intro:'intro',calc:'calc',export:'csv',resultHeading:'results',footerText:'footer'}))el(id).textContent=t()[key];
@@ -655,8 +655,8 @@ if(typeof document!=='undefined'){
   (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
  el('files').setAttribute('accept',iosFilePicker?'application/octet-stream':'.gpx,application/gpx+xml');
  el('distanceUnit').addEventListener('change',e=>{
-  const next=e.target.value;
-  if(!['km','mi'].includes(next)||next===distanceUnit)return;
+  const next=e.target.checked?'mi':'km';
+  if(next===distanceUnit)return;
   // Keep existing manual inputs physically equivalent when switching units.
   const factor=next==='mi'?MILES_PER_KM:1/MILES_PER_KM;
   for(const [id,multiplier] of [['manualLength',factor],['manualArea',factor*factor]]){

@@ -292,3 +292,9 @@ Area Efficiency Guide for INTVL is guided by five principles:
 - Manual km/mi selection in the top settings row, saved locally.
 - Route lengths, enclosed areas, comparisons, small areas, manual calculator and CSV exports follow the selected units.
 - Existing geometric calculations remain metric internally; efficiency percentages are unchanged.
+
+
+## v1.0.9.7.1 – Unit switch UI refinement
+
+- Replaced the km/mi dropdown with a matching accessible toggle slider next to the existing language toggle.
+- Preserved automatic region detection, saved preferences, unit conversion, and all calculation logic.
