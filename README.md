@@ -1,3 +1,6 @@
+> **v1.1.0.1 – Elevation Feature Preview (TEST BUILD, not yet published)**  
+> Added separate total-ascent/descent estimates and an interactive GPX elevation profile, with relative height change from start, km/mi axis, and German/English/Spanish UI. No GPX elevation data is uploaded. Area efficiency, Area Factor, closure handling, and existing CSV columns are unchanged. For calculation details and validation limitations see [`ELEVATION_PREVIEW_NOTES.md`](ELEVATION_PREVIEW_NOTES.md). Stable reference remains **v1.0.9.9.1**.
+
 # Area Efficiency Guide for INTVL
 
 **Calculate the area enclosed by a GPX route and evaluate its efficiency.**
@@ -212,7 +215,9 @@ This disclosure is intended to credit the collaboration accurately and make the 
 
 ## Project Status & Releases
 
-**Current stable reference version: v1.0.8.5**
+**Latest published stable release: v1.0.9.9.1** ([GitHub release](https://github.com/Schloesy/area-efficiency-guide/releases/tag/v1.0.9.9.1)).
+
+**Previous extensively documented reference: v1.0.8.5.**
 
 The v1.0.8.5 release was validated by the project owner with a recorded GPX route containing approximately 8,800 points, including tests of map navigation and route comparison. Route rendering was also checked in Firefox and Chrome on desktop and on a Samsung Galaxy S20 FE 5G smartphone. These tests are not a guarantee of identical behavior on every device or browser.
 

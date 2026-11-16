@@ -1,0 +1,184 @@
+'use strict';
+/* Elevation Feature Preview (v1.1.0.1)
+ * Isolated from the original GPX geometry, areas and Area Factor calculations.
+ * The 20 m resampling / 40 m Gaussian sigma is provisional, not a Komoot or
+ * Samsung Health algorithm and not validated for every terrain / device.
+ */
+(function () {
+ const STEP=20, SIGMA=40, EARTH=6371008.8, RAD=Math.PI/180;
+ const haversine=(a,b)=>{
+  const dlat=(b.lat-a.lat)*RAD,dlon=(b.lon-a.lon)*RAD;
+  const v=Math.sin(dlat/2)**2+Math.cos(a.lat*RAD)*Math.cos(b.lat*RAD)*Math.sin(dlon/2)**2;
+  return 2*EARTH*Math.asin(Math.min(1,Math.sqrt(v)));
+ };
+ function segmentsFromXml(xml){
+  const doc=new DOMParser().parseFromString(xml,'application/xml');
+  if(doc.getElementsByTagName('parsererror').length)throw Error('INVALID_XML');
+  const nodes=Array.from(doc.getElementsByTagName('*'));
+  const children=(node,tag)=>Array.from(node.children).filter(n=>n.localName===tag);
+  let groups=nodes.filter(n=>n.localName==='trkseg').map(n=>children(n,'trkpt')).filter(g=>g.length>1);
+  if(!groups.length)groups=nodes.filter(n=>n.localName==='rte').map(n=>children(n,'rtept')).filter(g=>g.length>1);
+  return groups.map(group=>group.map(node=>{
+   const lat=Number(node.getAttribute('lat')),lon=Number(node.getAttribute('lon'));
+   const tag=children(node,'ele')[0],raw=tag?tag.textContent.trim():'';
+   const elevation=raw===''?null:Number(raw);
+   return {lat,lon,elevation:Number.isFinite(elevation)?elevation:null};
+  }));
+ }
+ function interpolate(samples,x){
+  if(x<=samples[0].d)return samples[0].z;
+  if(x>=samples[samples.length-1].d)return samples[samples.length-1].z;
+  let lo=0,hi=samples.length-1;
+  while(hi-lo>1){const mid=(hi+lo)>>1;if(samples[mid].d<=x)lo=mid;else hi=mid}
+  const a=samples[lo],b=samples[hi];
+  return a.z+(b.z-a.z)*(x-a.d)/(b.d-a.d);
+ }
+ function smoothed(input){
+  const range=Math.ceil(3*SIGMA/STEP),result=[];
+  for(let i=0;i<input.length;i++){
+   let total=0,weightSum=0;
+   for(let j=Math.max(0,i-range);j<=Math.min(input.length-1,i+range);j++){
+    const dx=input[j].d-input[i].d;
+    if(Math.abs(dx)>3*SIGMA)continue;
+    const weight=Math.exp(-.5*(dx/SIGMA)**2);
+    total+=weight*input[j].z;weightSum+=weight;
+   }
+   result.push({d:input[i].d,z:total/weightSum});
+  }
+  return result;
+ }
+ function analyzeElevationGpx(xml){
+  const groups=segmentsFromXml(xml);
+  const count=groups.reduce((n,s)=>n+s.length,0);
+  const complete=groups.length>0&&groups.every(g=>g.every(p=>p.elevation!==null));
+  if(!complete)return {available:false,count,validCount:groups.reduce((n,s)=>n+s.filter(p=>p.elevation!==null).length,0)};
+  let total=0,ascent=0,descent=0;
+  const profile=[];
+  for(const group of groups){
+   // Only sum within each track segment: never invent vertical movement across a recording gap.
+   const raw=[{d:0,z:group[0].elevation}];
+   let d=0;
+   for(let i=1;i<group.length;i++){
+    const step=haversine(group[i-1],group[i]);
+    if(!Number.isFinite(step)||step<.001)continue;
+    d+=step;raw.push({d,z:group[i].elevation});
+   }
+   if(raw.length<2||d<=0)continue;
+   const uniform=[];
+   for(let at=0;at<d;at+=STEP)uniform.push({d:at,z:interpolate(raw,at)});
+   uniform.push({d,z:raw[raw.length-1].z});
+   const filtered=smoothed(uniform);
+   for(let i=1;i<filtered.length;i++){
+    const change=filtered[i].z-filtered[i-1].z;
+    if(change>0)ascent+=change;else descent-=change;
+   }
+   for(let i=0;i<filtered.length;i++){
+    // Segment breaks are not counted as climb or descent.
+    if(profile.length&&i===0)continue;
+    profile.push({d:total+filtered[i].d,z:filtered[i].z});
+   }
+   total+=d;
+  }
+  if(profile.length<2)return {available:false,count,validCount:count};
+  // Raw starting height is stable across unit switches; reported differences use a
+  // consistently smoothed profile, matching the displayed line.
+  const start=profile[0].z;
+  for(const point of profile)point.relative=point.z-start;
+  return {available:true,count,validCount:count,ascent,descent,profile,distanceMeters:total};
+ }
+ const ns='http://www.w3.org/2000/svg';
+ function svgElement(tag,attrs,text){
+  const n=document.createElementNS(ns,tag);
+  for(const [key,value] of Object.entries(attrs||{}))n.setAttribute(key,String(value));
+  if(text!==undefined)n.textContent=text;
+  return n;
+ }
+ function make(tag,className,text){const n=document.createElement(tag);if(className)n.className=className;if(text!==undefined)n.textContent=text;return n}
+ function renderElevationProfile(data,t,lang,unit,fmt){
+  const section=make('section','elevation-section');
+  const title=make('h4','elevation-title',t.elevationTitle);section.append(title);
+  if(!data||!data.available){
+   section.append(make('p','small elevation-unavailable',t.elevationUnavailable));return section;
+  }
+  const metricRow=make('div','elevation-metrics');
+  for(const [label,value,kind] of [[t.elevationAscent,data.ascent,'up'],[t.elevationDescent,data.descent,'down']]){
+   const stat=make('div','elevation-metric '+kind);
+   stat.append(make('span','elevation-metric-label',label));
+   stat.append(make('strong','elevation-metric-value',(kind==='up'?'+':'−')+fmt(Math.round(value),0)+' m'));
+   metricRow.append(stat);
+  }
+  section.append(metricRow);
+  const box=make('div','elevation-chart-box');
+  const summary=make('div','elevation-chart-header'),reading=make('div','elevation-reading'),position=make('div','elevation-position');
+  reading.append(make('span','elevation-reading-caption',t.elevationRelative));
+  const relativeValue=make('strong','elevation-reading-value');reading.append(relativeValue);
+  position.append(make('span','elevation-position-caption',t.elevationPosition));
+  const positionValue=make('strong','elevation-position-value');position.append(positionValue);
+  summary.append(reading,position);box.append(summary);
+  const profile=data.profile,mobile=window.matchMedia('(max-width:600px)').matches;
+  const W=mobile?380:850,H=mobile?230:255,L=mobile?49:57,R=mobile?13:19,T=15,B=43,plotW=W-L-R,plotH=H-T-B;
+  const total=profile[profile.length-1].d||1;
+  let minZ=Infinity,maxZ=-Infinity;for(const point of profile){if(point.z<minZ)minZ=point.z;if(point.z>maxZ)maxZ=point.z}
+  // Provide usable visual scale even on very flat tracks.
+  const span=Math.max(maxZ-minZ,8),pad=Math.max(span*.14,2);
+  const bottom=minZ-pad,top=maxZ+pad;
+  const x=d=>L+d/total*plotW;
+  const y=z=>T+(top-z)/(top-bottom)*plotH;
+  const distanceDisplay=meters=>meters/(unit==='mi'?1609.344:1000);
+  const svg=svgElement('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':t.elevationChartAria,class:'elevation-chart'});
+  for(let i=0;i<=4;i++){
+   const v=bottom+(top-bottom)*i/4,yp=y(v);
+   svg.append(svgElement('line',{x1:L,x2:W-R,y1:yp,y2:yp,class:'elevation-grid'}));
+   svg.append(svgElement('text',{x:L-9,y:yp+4,'text-anchor':'end',class:'elevation-axis-text'},fmt(Math.round(v),0)));
+  }
+  for(let i=0;i<=4;i++){
+   const v=total*i/4,xp=x(v);
+   svg.append(svgElement('text',{x:xp,y:H-19,'text-anchor':i===0?'start':i===4?'end':'middle',class:'elevation-axis-text'},fmt(distanceDisplay(v),1)));
+  }
+  svg.append(svgElement('text',{x:(L+W-R)/2,y:H-2,'text-anchor':'middle',class:'elevation-axis-caption'},t.elevationDistance+' ('+unit+')'));
+  svg.append(svgElement('text',{x:W-R,y:T+7,'text-anchor':'end',class:'elevation-axis-caption'},'m'));
+  // Keep DOM size bounded while retaining the actual resampled points for selection.
+  const stride=Math.max(1,Math.ceil(profile.length/1200)),samples=[];
+  for(let i=0;i<profile.length;i+=stride)samples.push(profile[i]);
+  if(samples[samples.length-1]!==profile[profile.length-1])samples.push(profile[profile.length-1]);
+  const stroke=samples.map((p,i)=>(i?'L':'M')+x(p.d).toFixed(2)+' '+y(p.z).toFixed(2)).join(' ');
+  const area=stroke+' L'+x(total).toFixed(2)+' '+(H-B)+' L'+L+' '+(H-B)+' Z';
+  svg.append(svgElement('path',{d:area,class:'elevation-fill'}));
+  svg.append(svgElement('path',{d:stroke,class:'elevation-line'}));
+  const marker=svgElement('circle',{r:6,class:'elevation-marker'});
+  const guide=svgElement('line',{class:'elevation-guide',y1:T,y2:H-B});
+  svg.append(guide,marker);
+  const overlay=svgElement('rect',{x:L,y:T,width:plotW,height:plotH,fill:'transparent',class:'elevation-hit-area'});
+  svg.append(overlay);box.append(svg);
+  const rangeLabel=make('label','elevation-range-label',t.elevationSelectPoint);
+  const range=make('input','elevation-range');range.type='range';range.min='0';range.max=String(profile.length-1);range.step='1';range.value='0';range.setAttribute('aria-label',t.elevationSelectPoint);
+  rangeLabel.append(range);box.append(rangeLabel);
+  const note=make('p','small elevation-note',t.elevationEstimate);box.append(note);section.append(box);
+  function select(index){
+   const i=Math.max(0,Math.min(profile.length-1,Math.round(index))),p=profile[i];
+   range.value=String(i);
+   const delta=Math.round(p.relative);
+   relativeValue.textContent=(delta>0?'+':delta<0?'−':'')+fmt(Math.abs(delta),0)+' m';
+   positionValue.textContent=fmt(distanceDisplay(p.d),2)+' '+unit;
+   marker.setAttribute('cx',x(p.d));marker.setAttribute('cy',y(p.z));
+   guide.setAttribute('x1',x(p.d));guide.setAttribute('x2',x(p.d));
+   range.setAttribute('aria-valuetext',positionValue.textContent+', '+relativeValue.textContent);
+   data.selectedFraction=i/(profile.length-1);
+  }
+  function indexAt(event){
+   const bounds=svg.getBoundingClientRect();
+   if(!bounds.width)return 0;
+   const chartX=(event.clientX-bounds.left)/bounds.width*W;
+   const d=Math.max(0,Math.min(1,(chartX-L)/plotW))*total;
+   let lo=0,hi=profile.length-1;
+   while(hi-lo>1){const mid=(lo+hi)>>1;if(profile[mid].d<d)lo=mid;else hi=mid}
+   return Math.abs(profile[lo].d-d)<Math.abs(profile[hi].d-d)?lo:hi;
+  }
+  range.addEventListener('input',()=>select(Number(range.value)));
+  overlay.addEventListener('pointerdown',e=>{select(indexAt(e));if(e.pointerType==='mouse'||e.pointerType==='pen')overlay.setPointerCapture(e.pointerId)});
+  overlay.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&!e.buttons)return;if(e.pointerType==='touch'&&!e.isPrimary)return;select(indexAt(e))});
+  select(Math.round((data.selectedFraction||0)*(profile.length-1)));
+  return section;
+ }
+ window.INTVLElevation={analyzeElevationGpx,renderElevationProfile};
+})();
