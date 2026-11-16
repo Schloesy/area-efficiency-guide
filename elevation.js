@@ -1,5 +1,5 @@
 'use strict';
-/* Elevation Layout Preview (v1.1.0.3)
+/* Elevation Layout Preview (v1.1.0.4)
  * Isolated from the original GPX geometry, areas and Area Factor calculations.
  * The 20 m resampling / 40 m Gaussian sigma is provisional, not a Komoot or
  * Samsung Health algorithm and not validated for every terrain / device.
@@ -110,46 +110,49 @@
   return n;
  }
  function make(tag,className,text){const n=document.createElement(tag);if(className)n.className=className;if(text!==undefined)n.textContent=text;return n}
+ // All stored elevation values remain metres; conversion is for display only.
+ const displayHeight=(metres,unit,fmt)=>fmt(Math.round(Math.abs(metres)*(unit==='mi'?3.280839895013123:1)),0)+' '+(unit==='mi'?'ft':'m');
+ function renderElevationSummary(data,t,lang,unit,fmt){
+  if(!data||!data.available)return null;
+  const card=make('div','stat elevation-summary');
+  const heading=make('div','elevation-info-head');
+  heading.append(make('span','elevation-summary-label',t.elevationCombined));
+  const infoButton=make('button','elevation-info-button','i');
+  infoButton.type='button';
+  infoButton.setAttribute('aria-label',t.elevationInfo);
+  infoButton.setAttribute('title',t.elevationInfo);
+  infoButton.setAttribute('aria-expanded','false');
+  heading.append(infoButton);
+  card.append(heading);
+  const values=make('div','elevation-summary-values');
+  for(const [label,value,kind,arrow] of [[t.elevationAscent,data.ascent,'up','↑'],[t.elevationDescent,data.descent,'down','↓']]){
+   const item=make('div','elevation-summary-item '+kind);
+   item.setAttribute('aria-label',label+': '+(kind==='up'?'+':'−')+displayHeight(value,unit,fmt));
+   item.append(make('span','elevation-summary-arrow',arrow));
+   item.append(make('strong','elevation-summary-value',(kind==='up'?'+':'−')+displayHeight(value,unit,fmt)));
+   values.append(item);
+  }
+  card.append(values);
+  const note=make('p','small elevation-info-note',t.elevationEstimate);
+  note.hidden=true;
+  note.id='elevation-estimate-note-'+(++infoSequence);
+  infoButton.setAttribute('aria-controls',note.id);
+  infoButton.addEventListener('click',()=>{
+   const shouldOpen=note.hidden;
+   for(const other of document.querySelectorAll('.elevation-info-button[aria-expanded="true"]')){
+    if(other!==infoButton)closeInfo(other);
+   }
+   note.hidden=!shouldOpen;
+   infoButton.setAttribute('aria-expanded',String(shouldOpen));
+  });
+  card.append(note);
+  return card;
+ }
  function renderElevationProfile(data,t,lang,unit,fmt){
   const section=make('section','elevation-section');
   if(!data||!data.available){
    section.append(make('p','small elevation-unavailable',t.elevationUnavailable));return section;
   }
-  const metricRow=make('div','elevation-metrics');
-  let infoButton=null;
-  for(const [label,value,kind] of [[t.elevationAscent,data.ascent,'up'],[t.elevationDescent,data.descent,'down']]){
-   const stat=make('div','elevation-metric '+kind);
-   if(kind==='up'){
-    const heading=make('div','elevation-info-head');
-    heading.append(make('span','elevation-metric-label',label));
-    infoButton=make('button','elevation-info-button','i');
-    infoButton.type='button';
-    infoButton.setAttribute('aria-label',t.elevationInfo);
-    infoButton.setAttribute('title',t.elevationInfo);
-    infoButton.setAttribute('aria-expanded','false');
-    heading.append(infoButton);stat.append(heading);
-   }else stat.append(make('span','elevation-metric-label',label));
-   stat.append(make('strong','elevation-metric-value',(kind==='up'?'+':'−')+fmt(Math.round(value),0)+' m'));
-   metricRow.append(stat);
-  }
-  section.append(metricRow);
-  // Reveal the estimate note on demand without taking permanent chart space.
-  const note=make('p','small elevation-info-note',t.elevationEstimate);
-  note.hidden=true;
-  const noteId='elevation-estimate-note-'+(++infoSequence);
-  note.id=noteId;infoButton.setAttribute('aria-controls',noteId);
-  infoButton.addEventListener('click',()=>{
-   const shouldOpen=note.hidden;
-   for(const other of document.querySelectorAll('.elevation-info-button[aria-expanded="true"]')){
-    if(other===infoButton)continue;
-    other.setAttribute('aria-expanded','false');
-    const otherNote=document.getElementById(other.getAttribute('aria-controls'));
-    if(otherNote)otherNote.hidden=true;
-   }
-   note.hidden=!shouldOpen;
-   infoButton.setAttribute('aria-expanded',String(shouldOpen));
-  });
-  section.append(note);
   const box=make('div','elevation-chart-box');
   const summary=make('div','elevation-chart-header'),reading=make('div','elevation-reading'),position=make('div','elevation-position');
   reading.append(make('span','elevation-reading-caption',t.elevationRelative));
@@ -175,14 +178,14 @@
   for(let i=0;i<=4;i++){
    const v=bottom+(top-bottom)*i/4,yp=y(v);
    svg.append(svgElement('line',{x1:L,x2:W-R,y1:yp,y2:yp,class:'elevation-grid'}));
-   svg.append(svgElement('text',{x:L-9,y:yp+4,'text-anchor':'end',class:'elevation-axis-text'},fmt(Math.round(v),0)));
+   svg.append(svgElement('text',{x:L-9,y:yp+4,'text-anchor':'end',class:'elevation-axis-text'},fmt(Math.round(v*(unit==='mi'?3.280839895013123:1)),0)));
   }
   for(let i=0;i<=4;i++){
    const v=total*i/4,xp=x(v);
    svg.append(svgElement('text',{x:xp,y:H-19,'text-anchor':i===0?'start':i===4?'end':'middle',class:'elevation-axis-text'},fmt(distanceDisplay(v),1)));
   }
   svg.append(svgElement('text',{x:(L+W-R)/2,y:H-2,'text-anchor':'middle',class:'elevation-axis-caption'},t.elevationDistance+' ('+unit+')'));
-  svg.append(svgElement('text',{x:W-R,y:T+7,'text-anchor':'end',class:'elevation-axis-caption'},'m'));
+  svg.append(svgElement('text',{x:W-R,y:T+7,'text-anchor':'end',class:'elevation-axis-caption'},unit==='mi'?'ft':'m'));
   // Keep DOM size bounded while retaining the actual resampled points for selection.
   const stride=Math.max(1,Math.ceil(profile.length/1200)),samples=[];
   for(let i=0;i<profile.length;i+=stride)samples.push(profile[i]);
@@ -201,8 +204,9 @@
   function select(index){
    const i=Math.max(0,Math.min(profile.length-1,Math.round(index))),p=profile[i];
    selectedIndex=i;
-   const delta=Math.round(p.relative);
-   relativeValue.textContent=(delta>0?'+':delta<0?'−':'')+fmt(Math.abs(delta),0)+' m';
+   const delta=p.relative,roundedDelta=Math.round(Math.abs(delta)*(unit==='mi'?3.280839895013123:1));
+   // Suppress misleading '+0 ft' or '−0 ft' after rounding near the start height.
+   relativeValue.textContent=(roundedDelta===0?'':delta>0?'+':'−')+fmt(roundedDelta,0)+' '+(unit==='mi'?'ft':'m');
    positionValue.textContent=fmt(distanceDisplay(p.d),2)+' '+unit;
    marker.setAttribute('cx',x(p.d));marker.setAttribute('cy',y(p.z));
    guide.setAttribute('x1',x(p.d));guide.setAttribute('x2',x(p.d));
@@ -257,5 +261,5 @@
   select(Math.round((data.selectedFraction||0)*(profile.length-1)));
   return section;
  }
- window.INTVLElevation={analyzeElevationGpx,renderElevationProfile};
+ window.INTVLElevation={analyzeElevationGpx,renderElevationProfile,renderElevationSummary};
 })();

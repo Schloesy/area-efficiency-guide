@@ -1,12 +1,20 @@
-# Elevation Feature Preview – v1.1.0.3 (layout refinement)
+# Elevation Feature Preview – v1.1.0.4 (layout / unit refinement)
 
 ## Scope
 
 An experimental, independent elevation feature adds:
-- Total ascent (+m) and total descent (−m) in each GPX result.
-- An interactive elevation chart beneath the existing results. Select a location by tapping or dragging the chart; keyboard users can focus the chart and use Arrow keys, Page Up/Down, Home and End.
-- A selected-point readout of **height difference from route start** (not altitude above sea level). The chart's vertical axis remains absolute altitude in meters; horizontal distance switches between kilometers and miles.
+- Total ascent and descent (+m/−m, or +ft/−ft when miles are selected) together in one results tile.
+- An interactive elevation chart immediately beneath the route map. Select a location by tapping or dragging the chart; keyboard users can focus the chart and use Arrow keys, Page Up/Down, Home and End.
+- A selected-point readout of **height difference from route start** (not altitude above sea level). The chart's vertical axis displays absolute altitude in meters or feet according to the unit selection; horizontal distance switches between kilometers and miles.
 - German, English and Spanish labels; light and dark styling; graceful unavailable-data message.
+
+## Changes from v1.1.0.3 to v1.1.0.4
+
+- The chart (including relative change and position readouts) appears immediately beneath the map; individual enclosed-area details continue below the statistics.
+- A single ascent/descent tile appears in the statistics grid after circle efficiency and before square efficiency, directly below Area Factor. The original five-card layout remains when GPX elevations are missing.
+- The estimate-info button is visually reduced from 28 px to 18 px, with an additional invisible pointer target, and the disclosure is now a popup anchored to the combined metric tile.
+- Switching to miles also switches **all elevation output** to feet: ascent, descent, relative elevation, absolute chart ticks, vertical-axis unit and screen-reader value text. Internal data and calculations remain in meters.
+- No changes to geometry, Area Factor, vertical gain/loss algorithms, or chart pointer handling.
 
 ## Changes from v1.1.0.2 to v1.1.0.3
 
@@ -59,6 +67,14 @@ These three routes are only preliminary sanity tests and cannot establish univer
 Automated Chromium browser checks covered Android-touch and iPhone-like device emulation: forward/reverse dragging (also with vertical finger drift), chart pointer capture, no unwanted mode switch, normal page-swipe navigation outside the chart, desktop mouse dragging, keyboard controls, km/mi, Spanish, dark mode, and no JavaScript errors. Comparing the three reference GPX files against v1.1.0.1 confirmed exactly unchanged ascent/descent results.
 
 **Limitations:** The tests did **not** run on real Android devices, iOS Safari/WebKit, a live service worker/offline installation, or the deployed Web Worker. In-browser test navigation was restricted; tests loaded the real JS inline and used the pre-existing main-thread geometry fallback. Please test on both physical smartphones before considering this revision stable.
+
+## v1.1.0.4 verification scope
+
+- Automated desktop Chromium and Android/iPhone-like touch emulations at 320, 390, 768 and 1280 CSS pixels checked map/chart alignment, chart-before-stat ordering, the middle summary tile below Area Factor, no horizontal overflow, info-button behavior, and chart dragging left and right.
+- Metric and imperial labels were checked for total ascent, descent, relative height, absolute height tick labels and chart axis units, including accessible selected-point text. The height conversion is 1 m = 3.280839895013123 ft, rounded to whole display units. Internal track heights and height-gain computations remain in metres.
+- German, English and Spanish languages and dark theme passed UI checks. Two imported routes have independently dismissible info notes. Missing `<ele>` GPX tracks retain the original five-stat layout.
+- References: flat Komoot +11/−11 m, hilly Komoot +344/−349 m, Samsung +371/−377 m; identical to the previous preview. The geometry worker is byte-identical to v1.1.0.3. Mouse and keyboard interaction also passed.
+- Real-device iOS Safari, Android browsers, installed-PWA updates and offline caching remain to be confirmed by the project owner.
 
 ## v1.1.0.3 verification scope
 

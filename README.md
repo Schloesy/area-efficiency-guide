@@ -1,3 +1,6 @@
+> **v1.1.0.4 – Elevation Arrangement & Units (TEST BUILD)**  
+> The elevation chart now sits immediately below the route map. Ascent and descent are combined in a centered tile between circle and square efficiency, below Area Factor. The info icon is smaller. Selecting miles displays elevation in feet (ft) everywhere, including the chart's vertical axis and relative-height readout; underlying calculations remain in meters. Existing mobile drag handling is unchanged.
+>
 > **v1.1.0.3 – Elevation Layout Improvements (TEST BUILD, not yet published)**  
 > Individual enclosed areas now appear below the elevation profile. The profile spans the map width and the graph is about half as tall, without an outer card border or visible heading. A localized info button reveals the GPX elevation-estimate disclaimer only when requested. The reliable v1.1.0.2 drag gestures, keyboard support, altitude calculations, and area math remain unchanged.
 >
