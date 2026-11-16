@@ -1,4 +1,4 @@
-# Elevation Feature Preview – v1.1.0.2 (touch refinement)
+# Elevation Feature Preview – v1.1.0.3 (layout refinement)
 
 ## Scope
 
@@ -7,6 +7,14 @@ An experimental, independent elevation feature adds:
 - An interactive elevation chart beneath the existing results. Select a location by tapping or dragging the chart; keyboard users can focus the chart and use Arrow keys, Page Up/Down, Home and End.
 - A selected-point readout of **height difference from route start** (not altitude above sea level). The chart's vertical axis remains absolute altitude in meters; horizontal distance switches between kilometers and miles.
 - German, English and Spanish labels; light and dark styling; graceful unavailable-data message.
+
+## Changes from v1.1.0.2 to v1.1.0.3
+
+- Reordered results so that individual enclosed-area details appear beneath the elevation section.
+- Removed the elevation card's outer border, inset padding and redundant heading, allowing the plotted SVG to occupy the same full content width as the route map.
+- Halved the chart's internal SVG viewBox height (mobile: 230 → 115 units, desktop: 255 → 128 units). Kept the existing interactive guide/marker and axis ticks, adjusting plot margins.
+- Replaced the always-visible estimate note with an info button alongside the ascent label. Tap/click to reveal it, tap elsewhere or press Escape to dismiss. Accessible labels in DE/EN/ES and dark-mode styles are included.
+- No changes to GPX algorithms, route map handling, worker code, Area Factor, or touch-gesture event handlers.
 
 ## Changes from v1.1.0.1 to v1.1.0.2
 
@@ -51,3 +59,9 @@ These three routes are only preliminary sanity tests and cannot establish univer
 Automated Chromium browser checks covered Android-touch and iPhone-like device emulation: forward/reverse dragging (also with vertical finger drift), chart pointer capture, no unwanted mode switch, normal page-swipe navigation outside the chart, desktop mouse dragging, keyboard controls, km/mi, Spanish, dark mode, and no JavaScript errors. Comparing the three reference GPX files against v1.1.0.1 confirmed exactly unchanged ascent/descent results.
 
 **Limitations:** The tests did **not** run on real Android devices, iOS Safari/WebKit, a live service worker/offline installation, or the deployed Web Worker. In-browser test navigation was restricted; tests loaded the real JS inline and used the pre-existing main-thread geometry fallback. Please test on both physical smartphones before considering this revision stable.
+
+## v1.1.0.3 verification scope
+
+Automated Chromium checks (not physical-device tests) covered Android-like and iOS-like touch gestures at 390 px, a narrow 320 px viewport, a 768 px tablet, and a 1280 px desktop. All chart widths matched the route-map container (within 2 px tolerance), the reduced SVG height and new result order were confirmed, and no body overflow or JavaScript errors occurred. Mouse/keyboard selection, DE/EN/ES info text and labels, dark-mode button styling, km/mi, and enclosed-area table switching passed. Both swipe directions remained functional. A separate multiple-route test verified independent info buttons and dismissal behavior, and a GPX without elevation returned an unavailable-data state. Total ascent/descent and displayed distance were unchanged relative to v1.1.0.2 for all three reference GPX files.
+
+**Not yet verified:** Physical Android/iOS Safari behavior, a deployed offline/PWA service worker, production Web Worker operation, and wider routes/real-device combinations. Keep as test build until field checks are satisfactory.

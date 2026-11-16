@@ -1,3 +1,6 @@
+> **v1.1.0.3 – Elevation Layout Improvements (TEST BUILD, not yet published)**  
+> Individual enclosed areas now appear below the elevation profile. The profile spans the map width and the graph is about half as tall, without an outer card border or visible heading. A localized info button reveals the GPX elevation-estimate disclaimer only when requested. The reliable v1.1.0.2 drag gestures, keyboard support, altitude calculations, and area math remain unchanged.
+>
 > **v1.1.0.2 – Elevation Touch Improvements (TEST BUILD, not yet published)**  
 > This revision improves touch dragging on Android, prevents the app’s swipe navigation from switching views while interacting with the elevation section, and removes the redundant visible slider. The chart remains keyboard-accessible via the arrow keys, Page Up/Down, Home and End. The ascent/descent algorithm and route/area calculations are unchanged.
 >
