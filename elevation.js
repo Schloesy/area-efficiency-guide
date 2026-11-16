@@ -1,5 +1,5 @@
 'use strict';
-/* Elevation Feature Preview (v1.1.0.1)
+/* Elevation Touch Preview (v1.1.0.2)
  * Isolated from the original GPX geometry, areas and Area Factor calculations.
  * The 20 m resampling / 40 m Gaussian sigma is provisional, not a Komoot or
  * Samsung Health algorithm and not validated for every terrain / device.
@@ -125,7 +125,11 @@
   const x=d=>L+d/total*plotW;
   const y=z=>T+(top-z)/(top-bottom)*plotH;
   const distanceDisplay=meters=>meters/(unit==='mi'?1609.344:1000);
-  const svg=svgElement('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':t.elevationChartAria,class:'elevation-chart'});
+  // The chart itself replaces the former visible range input as the accessible control.
+  const svg=svgElement('svg',{viewBox:`0 0 ${W} ${H}`,role:'slider',tabindex:0,
+   'aria-label':t.elevationChartAria+' – '+t.elevationSelectPoint,
+   'aria-orientation':'horizontal','aria-valuemin':0,'aria-valuemax':profile.length-1,
+   'aria-valuenow':0,class:'elevation-chart'});
   for(let i=0;i<=4;i++){
    const v=bottom+(top-bottom)*i/4,yp=y(v);
    svg.append(svgElement('line',{x1:L,x2:W-R,y1:yp,y2:yp,class:'elevation-grid'}));
@@ -150,19 +154,18 @@
   svg.append(guide,marker);
   const overlay=svgElement('rect',{x:L,y:T,width:plotW,height:plotH,fill:'transparent',class:'elevation-hit-area'});
   svg.append(overlay);box.append(svg);
-  const rangeLabel=make('label','elevation-range-label',t.elevationSelectPoint);
-  const range=make('input','elevation-range');range.type='range';range.min='0';range.max=String(profile.length-1);range.step='1';range.value='0';range.setAttribute('aria-label',t.elevationSelectPoint);
-  rangeLabel.append(range);box.append(rangeLabel);
   const note=make('p','small elevation-note',t.elevationEstimate);box.append(note);section.append(box);
+  let selectedIndex=0;
   function select(index){
    const i=Math.max(0,Math.min(profile.length-1,Math.round(index))),p=profile[i];
-   range.value=String(i);
+   selectedIndex=i;
    const delta=Math.round(p.relative);
    relativeValue.textContent=(delta>0?'+':delta<0?'−':'')+fmt(Math.abs(delta),0)+' m';
    positionValue.textContent=fmt(distanceDisplay(p.d),2)+' '+unit;
    marker.setAttribute('cx',x(p.d));marker.setAttribute('cy',y(p.z));
    guide.setAttribute('x1',x(p.d));guide.setAttribute('x2',x(p.d));
-   range.setAttribute('aria-valuetext',positionValue.textContent+', '+relativeValue.textContent);
+   svg.setAttribute('aria-valuenow',String(i));
+   svg.setAttribute('aria-valuetext',positionValue.textContent+', '+relativeValue.textContent);
    data.selectedFraction=i/(profile.length-1);
   }
   function indexAt(event){
@@ -174,9 +177,41 @@
    while(hi-lo>1){const mid=(lo+hi)>>1;if(profile[mid].d<d)lo=mid;else hi=mid}
    return Math.abs(profile[lo].d-d)<Math.abs(profile[hi].d-d)?lo:hi;
   }
-  range.addEventListener('input',()=>select(Number(range.value)));
-  overlay.addEventListener('pointerdown',e=>{select(indexAt(e));if(e.pointerType==='mouse'||e.pointerType==='pen')overlay.setPointerCapture(e.pointerId)});
-  overlay.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&!e.buttons)return;if(e.pointerType==='touch'&&!e.isPrimary)return;select(indexAt(e))});
+  // Capture *all* pointer types, including touch, to keep Android dragging
+  // stable when the finger briefly leaves the plotted region. touch-action:none
+  // on the SVG avoids browser gesture cancellation; page scroll works elsewhere.
+  let draggingPointer=null;
+  overlay.addEventListener('pointerdown',e=>{
+   if(!e.isPrimary||(e.pointerType==='mouse'&&e.button!==0))return;
+   draggingPointer=e.pointerId;select(indexAt(e));
+   try{overlay.setPointerCapture(e.pointerId)}catch(_){}
+  });
+  overlay.addEventListener('pointermove',e=>{
+   if(draggingPointer===e.pointerId)select(indexAt(e));
+  });
+  overlay.addEventListener('pointerup',e=>{
+   if(draggingPointer!==e.pointerId)return;
+   select(indexAt(e));draggingPointer=null;
+   if(overlay.hasPointerCapture(e.pointerId))overlay.releasePointerCapture(e.pointerId);
+  });
+  for(const type of ['pointercancel','lostpointercapture'])
+   overlay.addEventListener(type,e=>{if(draggingPointer===e.pointerId)draggingPointer=null});
+  // Keyboard access without another visible slider (arrows, Page Up/Down, Home/End).
+  svg.addEventListener('keydown',e=>{
+   const step=Math.max(1,Math.round((profile.length-1)/100));
+   const largeStep=Math.max(1,Math.round((profile.length-1)/10));
+   let next;
+   switch(e.key){
+    case 'ArrowRight':case 'ArrowUp':next=selectedIndex+step;break;
+    case 'ArrowLeft':case 'ArrowDown':next=selectedIndex-step;break;
+    case 'PageUp':next=selectedIndex+largeStep;break;
+    case 'PageDown':next=selectedIndex-largeStep;break;
+    case 'Home':next=0;break;
+    case 'End':next=profile.length-1;break;
+    default:return;
+   }
+   e.preventDefault();select(next);
+  });
   select(Math.round((data.selectedFraction||0)*(profile.length-1)));
   return section;
  }

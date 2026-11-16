@@ -1,5 +1,7 @@
-> **v1.1.0.1 – Elevation Feature Preview (TEST BUILD, not yet published)**  
-> Added separate total-ascent/descent estimates and an interactive GPX elevation profile, with relative height change from start, km/mi axis, and German/English/Spanish UI. No GPX elevation data is uploaded. Area efficiency, Area Factor, closure handling, and existing CSV columns are unchanged. For calculation details and validation limitations see [`ELEVATION_PREVIEW_NOTES.md`](ELEVATION_PREVIEW_NOTES.md). Stable reference remains **v1.0.9.9.1**.
+> **v1.1.0.2 – Elevation Touch Improvements (TEST BUILD, not yet published)**  
+> This revision improves touch dragging on Android, prevents the app’s swipe navigation from switching views while interacting with the elevation section, and removes the redundant visible slider. The chart remains keyboard-accessible via the arrow keys, Page Up/Down, Home and End. The ascent/descent algorithm and route/area calculations are unchanged.
+>
+> v1.1.0.1 introduced separate total-ascent/descent estimates and an interactive GPX elevation profile, with relative height change from start, km/mi axis, and German/English/Spanish UI. No GPX elevation data is uploaded. Area efficiency, Area Factor, closure handling, and existing CSV columns are unchanged. For calculation details and validation limitations see [`ELEVATION_PREVIEW_NOTES.md`](ELEVATION_PREVIEW_NOTES.md). Stable reference remains **v1.0.9.9.1**.
 
 # Area Efficiency Guide for INTVL
 

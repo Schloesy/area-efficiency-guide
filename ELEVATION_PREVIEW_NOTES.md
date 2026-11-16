@@ -1,12 +1,20 @@
-# Elevation Feature Preview – v1.1.0.1
+# Elevation Feature Preview – v1.1.0.2 (touch refinement)
 
 ## Scope
 
 An experimental, independent elevation feature adds:
 - Total ascent (+m) and total descent (−m) in each GPX result.
-- An interactive elevation chart beneath the existing results. Select a location by tapping the chart or using the keyboard-accessible range input.
+- An interactive elevation chart beneath the existing results. Select a location by tapping or dragging the chart; keyboard users can focus the chart and use Arrow keys, Page Up/Down, Home and End.
 - A selected-point readout of **height difference from route start** (not altitude above sea level). The chart's vertical axis remains absolute altitude in meters; horizontal distance switches between kilometers and miles.
 - German, English and Spanish labels; light and dark styling; graceful unavailable-data message.
+
+## Changes from v1.1.0.1 to v1.1.0.2
+
+- The plotted SVG region now captures touch, mouse and pen pointers for stable dragging in either direction (and releases them when the gesture ends).
+- Touch scrolling inside the SVG diagram is deliberately disabled to prevent Android from cancelling a drag. Vertical page scrolling still works outside the chart, including the surrounding metrics and content.
+- App-level left/right swipes no longer trigger a calculation-view change if a gesture starts anywhere inside the elevation section. Swipe navigation elsewhere remains available.
+- Removed the visually redundant range input; preserved screen-reader and keyboard selection directly on the focusable SVG chart (accessible horizontal slider role).
+- No change to smoothing, GPX parsing, area/efficiency values, CSV output, or maps.
 
 ## Method used in this preview
 
@@ -31,9 +39,15 @@ These three routes are only preliminary sanity tests and cannot establish univer
 
 ## Safety / integration
 
-- Existing `readGpx()`, `evaluate()`, `geometry-worker.js`, area calculation, Area Factor, comparison, route rendering and existing CSV layout remain unchanged. The only change to the worker URL is cache-busting the identical source for v1.1.0.1.
+- Existing `readGpx()`, `evaluate()`, `geometry-worker.js`, area calculation, Area Factor, comparison, route rendering and existing CSV layout remain unchanged. The worker URL has only been cache-busted; its source remains identical to v1.1.0.1.
 - Elevation calculations are in new `elevation.js`, attached to each successful result after the geometry calculation. Elevation parse failures do not invalidate a route's area analysis.
 - Chart drawing is native SVG, with no external dependencies or network requests.
 - Service worker cache and asset names updated so the new script and unchanged geometry worker can work offline after initial loading.
 - Chart-selection-to-map-position synchronization is **not** included in this preview; reserved for a future revision.
 - Do not upload a test build to the public GitHub Pages site as stable before checking real iOS, Android, desktop and offline behavior.
+
+## v1.1.0.2 verification scope
+
+Automated Chromium browser checks covered Android-touch and iPhone-like device emulation: forward/reverse dragging (also with vertical finger drift), chart pointer capture, no unwanted mode switch, normal page-swipe navigation outside the chart, desktop mouse dragging, keyboard controls, km/mi, Spanish, dark mode, and no JavaScript errors. Comparing the three reference GPX files against v1.1.0.1 confirmed exactly unchanged ascent/descent results.
+
+**Limitations:** The tests did **not** run on real Android devices, iOS Safari/WebKit, a live service worker/offline installation, or the deployed Web Worker. In-browser test navigation was restricted; tests loaded the real JS inline and used the pre-existing main-thread geometry fallback. Please test on both physical smartphones before considering this revision stable.

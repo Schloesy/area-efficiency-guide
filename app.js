@@ -631,7 +631,7 @@ if(typeof document!=='undefined'){
  for(const id of ['manualLength','manualArea'])el(id).addEventListener('input',renderManual);
  // Swipe between views only when starting on noninteractive page content.
  let touchStart=null;
- const swipeExcluded=target=>target.closest('input,button,select,textarea,a,.route-map,.osm-map,.face-details,.view-tabs,.comparison,.compare-toolbar,.compare-scroll,.compare-cards');
+ const swipeExcluded=target=>target.closest('input,button,select,textarea,a,.route-map,.osm-map,.face-details,.view-tabs,.comparison,.compare-toolbar,.compare-scroll,.compare-cards,.elevation-section');
  for(const id of ['viewGpx','viewManual']){
   const panel=el(id);
   panel.addEventListener('touchstart',e=>{
@@ -673,7 +673,7 @@ if(typeof document!=='undefined'){
  });
  el('language').addEventListener('change',e=>{language=e.target.value;localStorage.setItem('intvl-language',language);render()});
  let geometryWorker=null,workerId=0;const pending=new Map();
- try{geometryWorker=new Worker('./geometry-worker.js?v=11001');geometryWorker.onmessage=e=>{const {id,result,error}=e.data;const p=pending.get(id);if(!p)return;pending.delete(id);error?p.reject(Error(error)):p.resolve(result)};geometryWorker.onerror=()=>{geometryWorker.terminate();geometryWorker=null;for(const p of pending.values())p.reject(Error('Geometry worker failed'));pending.clear()}}catch(e){geometryWorker=null}
+ try{geometryWorker=new Worker('./geometry-worker.js?v=11002');geometryWorker.onmessage=e=>{const {id,result,error}=e.data;const p=pending.get(id);if(!p)return;pending.delete(id);error?p.reject(Error(error)):p.resolve(result)};geometryWorker.onerror=()=>{geometryWorker.terminate();geometryWorker=null;for(const p of pending.values())p.reject(Error('Geometry worker failed'));pending.clear()}}catch(e){geometryWorker=null}
  const evaluateAsync=(name,xml)=>geometryWorker?new Promise((resolve,reject)=>{const id=++workerId;pending.set(id,{resolve,reject});geometryWorker.postMessage({id,name,segments:readGpx(xml)})}):Promise.resolve().then(()=>evaluate(name,xml));
  el('calc').onclick=async()=>{
   const files=selectedGpxFiles();
